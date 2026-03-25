@@ -165,6 +165,23 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/inventario/unit-codes - Codici unità aggregati per inventario (batch, evita N+1)
+r.get('/unit-codes', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT
+        iu.inventario_id,
+        ARRAY_AGG(iu.codice_univoco ORDER BY iu.codice_univoco) AS unita_codici
+      FROM inventario_unita iu
+      GROUP BY iu.inventario_id
+    `);
+    res.json(result);
+  } catch (error) {
+    console.error('Errore GET unit-codes:', error);
+    res.status(500).json({ error: error.message || 'Errore nel recupero codici unità' });
+  }
+});
+
 // GET /api/inventario/:id
 r.get('/:id', requireAuth, async (req, res) => {
   try {

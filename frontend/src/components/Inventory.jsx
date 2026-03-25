@@ -105,44 +105,40 @@ const Inventory = () => {
  };
 
  // Fetch inventory data
- const fetchInventory = async () => {
+const fetchInventory = async () => {
  try {
  setLoading(true);
- const [inventoryRes, loansRes] = await Promise.all([
+const [inventoryRes, loansRes, unitCodesRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`, {
  headers: { 'Authorization': `Bearer ${token}` }
  }),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/prestiti?all=1`, {
  headers: { 'Authorization': `Bearer ${token}` }
+}),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/unit-codes`, {
+headers: { 'Authorization': `Bearer ${token}` }
  })
  ]);
  
  if (!inventoryRes.ok) throw new Error('Errore nel caricamento inventario');
  if (!loansRes.ok) throw new Error('Errore nel caricamento prestiti');
+if (!unitCodesRes.ok) throw new Error('Errore nel caricamento codici unità');
  
- const [inventoryData, loansData] = await Promise.all([
+const [inventoryData, loansData, unitCodesData] = await Promise.all([
  inventoryRes.json(),
- loansRes.json()
+loansRes.json(),
+unitCodesRes.json()
  ]);
- 
- // Carica le unità per ogni item dell'inventario
- const inventoryWithUnits = await Promise.all(
-   inventoryData.map(async (item) => {
-     try {
-       const unitsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${item.id}/units`, {
-         headers: { 'Authorization': `Bearer ${token}` }
-       });
-       if (unitsRes.ok) {
-         const units = await unitsRes.json();
-         return { ...item, unita_codici: units.map(u => u.codice_univoco) };
-       }
-       return { ...item, unita_codici: [] };
-     } catch (err) {
-       console.error(`Errore caricamento unità per item ${item.id}:`, err);
-       return { ...item, unita_codici: [] };
-     }
-   })
- );
+
+const unitCodesMap = (unitCodesData || []).reduce((acc, row) => {
+  acc[row.inventario_id] = row.unita_codici || [];
+  return acc;
+}, {});
+
+const inventoryWithUnits = (inventoryData || []).map((item) => ({
+  ...item,
+  unita_codici: unitCodesMap[item.id] || []
+}));
  
  setInventory(inventoryWithUnits);
  setLoans(loansData);
