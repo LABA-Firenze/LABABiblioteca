@@ -79,8 +79,43 @@ try {
 }
 
 // CORS configuration
+function withWwwVariant(originUrl) {
+  try {
+    const u = new URL(originUrl);
+    const host = u.hostname;
+    if (host.startsWith('www.')) {
+      return [`${u.protocol}//${host.replace(/^www\./, '')}`];
+    }
+    return [`${u.protocol}//www.${host}`];
+  } catch (_) {
+    return [];
+  }
+}
+
+const rawAllowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://attrezzatura.laba.biz',
+  'https://www.attrezzatura.laba.biz',
+];
+
+const allowedOrigins = new Set(
+  [...(rawAllowedOrigins.length ? rawAllowedOrigins : defaultAllowedOrigins)]
+    .flatMap((o) => [o, ...withWwwVariant(o)])
+);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
+  origin(origin, callback) {
+    // Consenti richieste server-to-server/postman senza Origin.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error(`Origin non consentita da CORS: ${origin}`), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
