@@ -96,6 +96,7 @@ const rawAllowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+const allowAllOrigins = rawAllowedOrigins.includes('*');
 
 const defaultAllowedOrigins = [
   'http://localhost:5173',
@@ -111,6 +112,7 @@ const allowedOrigins = new Set(
 
 const corsOptions = {
   origin(origin, callback) {
+    if (allowAllOrigins) return callback(null, true);
     // Consenti richieste server-to-server/postman senza Origin.
     if (!origin) return callback(null, true);
     if (allowedOrigins.has(origin)) return callback(null, true);
