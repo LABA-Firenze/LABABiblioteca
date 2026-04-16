@@ -70,7 +70,25 @@ const UserArea = () => {
     },
     {
       id: 'available-items',
-      label: 'Articoli Disponibili',
+      label: 'Catalogo',
+      icon: (
+        <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      )
+    },
+    {
+      id: 'available-items-thesis',
+      label: 'Tesi di laurea',
+      icon: (
+        <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      )
+    },
+    {
+      id: 'available-items-catalogs',
+      label: 'Cataloghi',
       icon: (
         <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -97,7 +115,11 @@ const UserArea = () => {
       case 'my-loans':
         return <MyLoans />;
       case 'available-items':
-        return <AvailableItems />;
+        return <AvailableItems catalogType="libri" />;
+      case 'available-items-thesis':
+        return <AvailableItems catalogType="tesi" />;
+      case 'available-items-catalogs':
+        return <AvailableItems catalogType="cataloghi" />;
       case 'report-fault':
         return <ReportFault />;
       default:

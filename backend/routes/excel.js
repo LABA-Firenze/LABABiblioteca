@@ -7,6 +7,11 @@ import * as XLSX from 'xlsx';
 import { uploadFile, deleteFile } from '../utils/supabaseStorage.js';
 
 const r = Router();
+const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi']);
+const resolveCatalogType = (req) => {
+  const rawType = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || 'libri').toLowerCase().trim();
+  return ALLOWED_CATALOG_TYPES.has(rawType) ? rawType : null;
+};
 
 // Configurazione multer per upload file - solo memoria per Railway
 const upload = multer({ 
@@ -19,6 +24,10 @@ const upload = multer({
 // GET /api/excel/inventario/export - Export inventario completo
 r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const result = await query(`
       SELECT 
         i.*,
@@ -32,9 +41,10 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
       FROM inventario i
       LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
       LEFT JOIN inventario_corsi ic ON ic.inventario_id = i.id
+      WHERE COALESCE(i.tipo_catalogo, 'libri') = $1
       GROUP BY i.id, cs.nome
       ORDER BY i.nome
-    `);
+    `, [tipoCatalogo]);
 
     // Prepara dati per Excel
     const data = result.map(item => ({
@@ -97,6 +107,10 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
 // POST /api/excel/inventario/import - Import inventario da Excel
 r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     // Verifica che i dati del file siano presenti
     const { fileName, fileSize, fileType, fileData } = req.body;
     
@@ -192,7 +206,7 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
         }
 
         // Verifica se elemento esiste già
-        const existing = await query('SELECT id FROM inventario WHERE nome = $1', [itemData.nome]);
+        const existing = await query(`SELECT id FROM inventario WHERE nome = $1 AND COALESCE(tipo_catalogo, 'libri') = $2`, [itemData.nome, tipoCatalogo]);
         let inventarioId;
         
         if (existing.length > 0) {
@@ -204,22 +218,23 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
                 posizione = $5, note = $6, immagine_url = $7, 
                 in_manutenzione = $8, soglia_minima = $9, fornitore = $10, tipo_prestito = $11, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
+              AND COALESCE(tipo_catalogo, 'libri') = $12
           `, [
             inventarioId, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
             itemData.posizione, itemData.note, itemData.immagine_url,
-            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito
+            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito, tipoCatalogo
           ]);
         } else {
           // Inserisci nuovo elemento
           const newItem = await query(`
             INSERT INTO inventario (nome, quantita_totale, categoria_madre, categoria_id, 
-                                   posizione, note, immagine_url, in_manutenzione, soglia_minima, fornitore, tipo_prestito)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                                   posizione, note, immagine_url, in_manutenzione, soglia_minima, fornitore, tipo_prestito, tipo_catalogo)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING id
           `, [
             itemData.nome, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
             itemData.posizione, itemData.note, itemData.immagine_url,
-            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito
+            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito, tipoCatalogo
           ]);
           inventarioId = newItem[0].id;
         }

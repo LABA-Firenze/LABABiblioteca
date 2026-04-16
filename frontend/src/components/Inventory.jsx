@@ -11,7 +11,7 @@ import QRCodeGenerator from './QRCodeGenerator';
 import { TableSkeleton } from './SkeletonLoader';
 import AdvancedFilters from './AdvancedFilters';
 
-const Inventory = () => {
+const Inventory = ({ catalogType = 'libri' }) => {
  const [inventory, setInventory] = useState([]);
  const [categories, setCategories] = useState([]);
  const [courses, setCourses] = useState([]);
@@ -84,12 +84,32 @@ const Inventory = () => {
     return courseAbbreviations[courseName] || courseName;
   };
 
- // Handle unit click to show loan details
+  const catalogMeta = {
+    libri: {
+      title: 'Catalogo',
+      subtitle: 'Gestisci e monitora tutti i materiali della biblioteca',
+      newItemLabel: 'Nuovo Articolo'
+    },
+    tesi: {
+      title: 'Tesi di laurea',
+      subtitle: 'Gestisci e monitora tutte le tesi di laurea',
+      newItemLabel: 'Nuova Tesi'
+    },
+    cataloghi: {
+      title: 'Cataloghi',
+      subtitle: 'Gestisci e monitora tutti i cataloghi',
+      newItemLabel: 'Nuovo Catalogo'
+    }
+  };
+  const currentCatalog = catalogMeta[catalogType] || catalogMeta.libri;
+  const withCatalogType = (url) => `${url}${url.includes('?') ? '&' : '?'}tipo_catalogo=${encodeURIComponent(catalogType)}`;
+
+  // Handle unit click to show loan details
  const handleUnitClick = async (unit) => {
    if (unit.stato !== 'prestato') return; // Only show details for loaned units
    
    try {
-     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/prestiti/unit/${unit.id}`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/prestiti/unit/${unit.id}`), {
        headers: { 'Authorization': `Bearer ${token}` }
      });
      
@@ -109,13 +129,13 @@ const fetchInventory = async () => {
  try {
  setLoading(true);
 const [inventoryRes, loansRes, unitCodesRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`, {
+        fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`), {
  headers: { 'Authorization': `Bearer ${token}` }
  }),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/prestiti?all=1`, {
  headers: { 'Authorization': `Bearer ${token}` }
 }),
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/unit-codes`, {
+        fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/unit-codes`), {
 headers: { 'Authorization': `Bearer ${token}` }
  })
  ]);
@@ -188,7 +208,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
   // Fetch units for a specific item
   const fetchItemUnits = async (itemId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/units`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/units`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -320,7 +340,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
     if (!window.confirm('Sei sicuro di voler eliminare questo articolo?')) return;
 
  try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}`), {
  method: 'DELETE',
  headers: {
  'Authorization': `Bearer ${token}`
@@ -345,7 +365,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
   // Handle export
   const handleExport = async () => {
     try {
-      await exportInventoryToExcel(token);
+      await exportInventoryToExcel(token, catalogType);
     } catch (err) {
       setError(err.message);
     }
@@ -357,7 +377,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
     try {
       setImportLoading(true);
       setError(null);
-      const result = await importInventoryFromExcel(file, token);
+      const result = await importInventoryFromExcel(file, token, catalogType);
       console.log('Import result:', result);
       await fetchInventory();
       alert(`Import completato: ${result.success}/${result.total} elementi processati`);
@@ -379,7 +399,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
   // Handle template
   const handleTemplate = async () => {
     try {
-      await generateInventoryTemplate(token);
+      await generateInventoryTemplate(token, catalogType);
     } catch (err) {
       setError(err.message);
     }
@@ -528,8 +548,8 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8 mx-4 sm:mx-6 lg:mx-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Catalogo</h1>
-            <p className="text-gray-600 text-lg">Gestisci e monitora tutti i materiali della biblioteca</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentCatalog.title}</h1>
+            <p className="text-gray-600 text-lg">{currentCatalog.subtitle}</p>
           </div>
         </div>
       </div>
@@ -588,8 +608,8 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Catalogo</h2>
-              <p className="text-gray-600 text-lg">Gestisci e monitora tutti i materiali della biblioteca</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentCatalog.title}</h2>
+              <p className="text-gray-600 text-lg">{currentCatalog.subtitle}</p>
             </div>
             
             <div className="flex flex-wrap gap-4 items-center">
@@ -598,7 +618,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                 className="group bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:from-teal-600 hover:to-teal-700 hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center"
               >
                 <Plus className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
-                <span>Nuovo Articolo</span>
+                <span>{currentCatalog.newItemLabel}</span>
               </button>
               
               <button
@@ -1270,6 +1290,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
           editingItem={editingItem}
           categories={categories}
           courses={courses}
+          catalogType={catalogType}
         />
 
         {/* Unit Loan Details Modal */}

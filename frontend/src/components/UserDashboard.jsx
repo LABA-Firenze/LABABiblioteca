@@ -25,6 +25,8 @@ const UserDashboard = () => {
     penalties: []
   });
   const [showQuickRequestModal, setShowQuickRequestModal] = useState(false);
+  const [showCatalogTypePicker, setShowCatalogTypePicker] = useState(false);
+  const [selectedCatalogType, setSelectedCatalogType] = useState('libri');
   const [showRequestDetailModal, setShowRequestDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showReportFaultModal, setShowReportFaultModal] = useState(false);
@@ -236,7 +238,7 @@ const UserDashboard = () => {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Azioni Rapide</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
-            onClick={() => setShowQuickRequestModal(true)}
+            onClick={() => setShowCatalogTypePicker(true)}
             className="btn-primary hover-lift flex items-center justify-center"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -464,11 +466,68 @@ const UserDashboard = () => {
         <NewRequestModal
           isOpen={showQuickRequestModal}
           onClose={() => setShowQuickRequestModal(false)}
+          catalogType={selectedCatalogType}
           onSuccess={() => {
             setShowQuickRequestModal(false);
             fetchData();
           }}
         />
+      )}
+
+      {showCatalogTypePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-xl w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Seleziona tipo di materiale</h3>
+              <button
+                onClick={() => setShowCatalogTypePicker(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('libri');
+                  setShowCatalogTypePicker(false);
+                  setShowQuickRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Libro</p>
+                <p className="text-sm text-gray-600 mt-1">Catalogo principale</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('tesi');
+                  setShowCatalogTypePicker(false);
+                  setShowQuickRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Tesi</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione tesi di laurea</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('cataloghi');
+                  setShowCatalogTypePicker(false);
+                  setShowQuickRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Catalogo</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showReportFaultModal && (

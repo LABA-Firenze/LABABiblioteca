@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess }) => {
+const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess, catalogType = 'libri' }) => {
   const [step, setStep] = useState(1); // 1: Oggetto, 2: ID Univoco, 3: Tipo Utilizzo, 4: Date e Note
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,6 +16,7 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess }) => {
   const [note, setNote] = useState('');
   const [tipoUtilizzo, setTipoUtilizzo] = useState('');
   const { token, user } = useAuth();
+  const withCatalogType = (url) => `${url}${url.includes('?') ? '&' : '?'}tipo_catalogo=${encodeURIComponent(catalogType)}`;
 
   useEffect(() => {
     if (isOpen) {
@@ -48,7 +49,7 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess }) => {
 
   const fetchInventory = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -77,7 +78,7 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess }) => {
 
   const fetchAvailableUnits = async (inventoryId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${inventoryId}/disponibili`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${inventoryId}/disponibili`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -168,7 +169,8 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess }) => {
           dal: dateRange.dal,
           al: dataFine.toISOString().split('T')[0],
           note: note,
-          tipo_utilizzo: selectedObject.tipo_prestito === 'entrambi' ? tipoUtilizzo : null
+          tipo_utilizzo: selectedObject.tipo_prestito === 'entrambi' ? tipoUtilizzo : null,
+          tipo_catalogo: catalogType
         })
       });
 

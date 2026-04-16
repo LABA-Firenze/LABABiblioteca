@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null }) => {
+const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, catalogType = 'libri' }) => {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Dati pubblicazione, 3: Tipo Utilizzo, 4: Categoria, 5: Codici Univoci
  const [courses, setCourses] = useState([]);
  const [categories, setCategories] = useState([]);
@@ -102,9 +102,11 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null }) 
  }, [isOpen, editingItem, step, formData.unita.length, unitsLoading]);
 
  // Fetch existing units for editing
- const fetchExistingUnits = async (itemId) => {
+const withCatalogType = (url) => `${url}${url.includes('?') ? '&' : '?'}tipo_catalogo=${encodeURIComponent(catalogType)}`;
+
+const fetchExistingUnits = async (itemId) => {
  try {
- const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/units`, {
+const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/units`), {
  headers: { 'Authorization': `Bearer ${token}` }
  });
  if (response.ok) {
@@ -232,7 +234,7 @@ const handleSubmit = async () => {
  try {
  setLoading(true);
  const method = editingItem ? 'PUT' : 'POST';
- const url = editingItem ? `${import.meta.env.VITE_API_BASE_URL}/api/inventario/${editingItem.id}` : `${import.meta.env.VITE_API_BASE_URL}/api/inventario`;
+ const url = editingItem ? withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${editingItem.id}`) : withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`);
  
   // Prepara categoria_madre con tutti i corsi disponibili
   let categoriaMadreValue = '';
@@ -258,7 +260,8 @@ const handleSubmit = async () => {
     fondo: formData.fondo || null,
     settore: formData.settore || null,
     location: formData.location || null,
-    corsi_assegnati: [] // Non più necessario, backend assegna automaticamente tutti i corsi
+    corsi_assegnati: [], // Non più necessario, backend assegna automaticamente tutti i corsi
+    tipo_catalogo: catalogType
   };
 
   // Rimuovi i campi che non servono al backend

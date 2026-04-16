@@ -124,6 +124,7 @@ export async function initDatabase() {
         quantita INTEGER DEFAULT 0,
         soglia_minima INTEGER DEFAULT 1,
         tipo_prestito VARCHAR(20) DEFAULT 'solo_esterno',
+        tipo_catalogo VARCHAR(20) DEFAULT 'libri',
         location VARCHAR(255),
         collana_id INTEGER REFERENCES collane(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -224,6 +225,7 @@ export async function initDatabase() {
       ALTER TABLE riparazioni ADD COLUMN IF NOT EXISTS tipo VARCHAR(100) DEFAULT 'segnalazione';
       ALTER TABLE riparazioni ADD COLUMN IF NOT EXISTS priorita VARCHAR(50) DEFAULT 'media';
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS tipo_prestito VARCHAR(20) DEFAULT 'solo_esterno';
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS tipo_catalogo VARCHAR(20) DEFAULT 'libri';
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS location VARCHAR(255);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS collana_id INTEGER REFERENCES collane(id);
       -- Migrazione campi inventario: fornitore -> autore, aggiungi nuovi campi pubblicazione
@@ -239,6 +241,8 @@ export async function initDatabase() {
       -- ALTER TABLE inventario DROP COLUMN IF EXISTS fornitore;
       -- ALTER TABLE inventario DROP COLUMN IF EXISTS note;
       -- ALTER TABLE inventario DROP COLUMN IF EXISTS immagine_url;
+      UPDATE inventario SET tipo_catalogo = 'libri' WHERE tipo_catalogo IS NULL OR tipo_catalogo = '';
+
       ALTER TABLE richieste ADD COLUMN IF NOT EXISTS tipo_utilizzo VARCHAR(20) DEFAULT NULL;
       
       -- Sistema di penalità per ritardi

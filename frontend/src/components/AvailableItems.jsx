@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import NewRequestModal from './NewRequestModal';
 import { ItemListSkeleton } from './SkeletonLoader';
 
-const AvailableItems = () => {
+const AvailableItems = ({ catalogType = 'libri' }) => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,11 +14,28 @@ const AvailableItems = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const { token, user } = useAuth();
 
+  const catalogMeta = {
+    libri: {
+      title: 'Catalogo',
+      description: 'Sfoglia e richiedi materiali del catalogo'
+    },
+    tesi: {
+      title: 'Tesi di laurea',
+      description: 'Sfoglia e richiedi tesi disponibili'
+    },
+    cataloghi: {
+      title: 'Cataloghi',
+      description: 'Sfoglia e richiedi cataloghi disponibili'
+    }
+  };
+  const currentCatalog = catalogMeta[catalogType] || catalogMeta.libri;
+  const withCatalogType = (url) => `${url}${url.includes('?') ? '&' : '?'}tipo_catalogo=${encodeURIComponent(catalogType)}`;
+
   // Fetch available items
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`, {
+      const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -53,7 +70,7 @@ const AvailableItems = () => {
   useEffect(() => {
     fetchItems();
     fetchCategories();
-  }, [user?.corso_accademico]);
+  }, [user?.corso_accademico, catalogType]);
 
   // Filter items
   const filteredItems = items.filter(item => {
@@ -113,8 +130,8 @@ const AvailableItems = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Articoli Disponibili</h1>
-            <p className="text-gray-600">Sfoglia e richiedi articoli per il tuo corso: {user?.corso_accademico}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{currentCatalog.title}</h1>
+            <p className="text-gray-600">{currentCatalog.description} per il tuo corso: {user?.corso_accademico}</p>
           </div>
           <div className="text-sm text-gray-500">
             {filteredItems.length} articoli trovati
@@ -271,6 +288,7 @@ const AvailableItems = () => {
             setSelectedItem(null);
           }}
           selectedItem={selectedItem}
+          catalogType={catalogType}
         />
       )}
     </div>

@@ -10,9 +10,19 @@ function getUserCourse(req) {
   return req.user?.corso_accademico || null;
 }
 
+const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi']);
+function resolveCatalogType(req) {
+  const rawType = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || 'libri').toLowerCase().trim();
+  return ALLOWED_CATALOG_TYPES.has(rawType) ? rawType : null;
+}
+
 // GET /api/inventario - Solo per admin
 r.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { search, corso } = req.query;
     let queryText = `
       SELECT
@@ -32,6 +42,9 @@ r.get('/', requireAuth, requireRole('admin'), async (req, res) => {
     `;
     const queryParams = [];
     const conditions = [];
+
+    conditions.push(`COALESCE(i.tipo_catalogo, 'libri') = $${queryParams.length + 1}`);
+    queryParams.push(tipoCatalogo);
 
     if (corso) {
       conditions.push(`EXISTS (SELECT 1 FROM inventario_corsi WHERE inventario_id = i.id AND corso = $${queryParams.length + 1})`);
@@ -59,6 +72,10 @@ r.get('/', requireAuth, requireRole('admin'), async (req, res) => {
 // GET /api/inventario/disponibili - Per utenti (solo oggetti del loro corso) e admin (tutti)
 r.get('/disponibili', requireAuth, async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const userCourse = getUserCourse(req);
     let result;
     
@@ -79,8 +96,9 @@ r.get('/disponibili', requireAuth, async (req, res) => {
           END AS stato_effettivo
         FROM inventario i
         LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
+        WHERE COALESCE(i.tipo_catalogo, 'libri') = $1
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome)
-      `);
+      `, [tipoCatalogo]);
   } else {
       // Utenti vedono tutti i libri (ogni libro è assegnato a tutti i corsi)
       result = await query(`
@@ -95,8 +113,9 @@ r.get('/disponibili', requireAuth, async (req, res) => {
           END AS stato_effettivo
         FROM inventario i
         LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
+        WHERE COALESCE(i.tipo_catalogo, 'libri') = $1
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome)
-      `);
+      `, [tipoCatalogo]);
     }
 
     res.json(result);
@@ -109,6 +128,10 @@ r.get('/disponibili', requireAuth, async (req, res) => {
 // GET /api/inventario/unita-disponibili - Per utenti iOS (singole unità disponibili)
 r.get('/unita-disponibili', requireAuth, async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const userCourse = getUserCourse(req);
     console.log(`🔍 User requesting unita-disponibili: ${req.user.nome} ${req.user.cognome} (${req.user.email})`);
     console.log(`🎓 User course: ${userCourse}`);
@@ -133,8 +156,9 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
           AND iu.prestito_corrente_id IS NULL 
           AND iu.richiesta_riservata_id IS NULL
           AND i.in_manutenzione = FALSE
+          AND COALESCE(i.tipo_catalogo, 'libri') = $1
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome), iu.codice_univoco
-      `);
+      `, [tipoCatalogo]);
     } else {
       // Utenti vedono tutte le unità disponibili (ogni libro è assegnato a tutti i corsi)
       result = await query(`
@@ -149,8 +173,9 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
           AND iu.prestito_corrente_id IS NULL 
           AND iu.richiesta_riservata_id IS NULL
           AND i.in_manutenzione = FALSE
+          AND COALESCE(i.tipo_catalogo, 'libri') = $1
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome), iu.codice_univoco
-      `);
+      `, [tipoCatalogo]);
     }
 
     console.log(`📦 Found ${result.length} available units for user`);
@@ -168,13 +193,19 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
 // GET /api/inventario/unit-codes - Codici unità aggregati per inventario (batch, evita N+1)
 r.get('/unit-codes', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const result = await query(`
       SELECT
         iu.inventario_id,
         ARRAY_AGG(iu.codice_univoco ORDER BY iu.codice_univoco) AS unita_codici
       FROM inventario_unita iu
+      JOIN inventario i ON i.id = iu.inventario_id
+      WHERE COALESCE(i.tipo_catalogo, 'libri') = $1
       GROUP BY iu.inventario_id
-    `);
+    `, [tipoCatalogo]);
     res.json(result);
   } catch (error) {
     console.error('Errore GET unit-codes:', error);
@@ -185,6 +216,10 @@ r.get('/unit-codes', requireAuth, requireRole('admin'), async (req, res) => {
 // GET /api/inventario/:id
 r.get('/:id', requireAuth, async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { id } = req.params;
     const result = await query(`
       SELECT i.*, 
@@ -198,8 +233,9 @@ r.get('/:id', requireAuth, async (req, res) => {
     FROM inventario i
     LEFT JOIN inventario_corsi ic ON ic.inventario_id = i.id
       WHERE i.id = $1
+        AND COALESCE(i.tipo_catalogo, 'libri') = $2
     GROUP BY i.id
-    `, [id]);
+    `, [id, tipoCatalogo]);
     
     if (result.length === 0) {
       return res.status(404).json({ error: 'Not found' });
@@ -215,6 +251,10 @@ r.get('/:id', requireAuth, async (req, res) => {
 // POST /api/inventario (create) — admin only
 r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { 
       nome, 
       categoria_madre,
@@ -274,10 +314,10 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
     
     // Create inventory item
     const result = await query(`
-      INSERT INTO inventario (nome, categoria_madre, categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita, in_manutenzione, tipo_prestito, location)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      INSERT INTO inventario (nome, categoria_madre, categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita, in_manutenzione, tipo_prestito, location, tipo_catalogo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
-    `, [nome, categoriaMadreValue, categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, false, tipo_prestito, location]);
+    `, [nome, categoriaMadreValue, categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, false, tipo_prestito, location, tipoCatalogo]);
     
     const newItem = result[0];
     
@@ -320,6 +360,10 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
 // PUT /api/inventario/:id (update) — admin only
 r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { id } = req.params;
     const { 
       nome, 
@@ -356,8 +400,9 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
           luogo_pubblicazione = $6, data_pubblicazione = $7, casa_editrice = $8, fondo = $9, settore = $10,
           quantita_totale = $11, quantita = $12, in_manutenzione = $13, tipo_prestito = $14, location = $15, updated_at = CURRENT_TIMESTAMP
       WHERE id = $16
+        AND COALESCE(tipo_catalogo, 'libri') = $17
       RETURNING *
-    `, [nome, categoria_madre || '', categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, in_manutenzione || false, tipo_prestito, location, id]);
+    `, [nome, categoria_madre || '', categoria_id, posizione, autore, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, in_manutenzione || false, tipo_prestito, location, id, tipoCatalogo]);
 
     if (result.length === 0) {
       return res.status(404).json({ error: 'Elemento inventario non trovato' });
@@ -368,7 +413,7 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
       // Only update if units are explicitly provided
       
       // Get current item to check if tipo_prestito is changing
-      const currentItem = await query('SELECT tipo_prestito FROM inventario WHERE id = $1', [id]);
+      const currentItem = await query(`SELECT tipo_prestito FROM inventario WHERE id = $1 AND COALESCE(tipo_catalogo, 'libri') = $2`, [id, tipoCatalogo]);
       const currentTipoPrestito = currentItem[0]?.tipo_prestito;
       const isTipoPrestitoChanging = currentTipoPrestito !== tipo_prestito;
       
@@ -569,14 +614,19 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 // DELETE /api/inventario/:id (delete) — admin only
 r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { id } = req.params;
     
     // Controlla se ci sono prestiti attivi per questo oggetto
     const activeLoans = await query(`
       SELECT COUNT(*) as count 
       FROM prestiti p 
-      WHERE p.inventario_id = $1 AND p.stato = 'attivo'
-    `, [id]);
+      JOIN inventario i ON i.id = p.inventario_id
+      WHERE p.inventario_id = $1 AND p.stato = 'attivo' AND COALESCE(i.tipo_catalogo, 'libri') = $2
+    `, [id, tipoCatalogo]);
     
     if (activeLoans[0]?.count > 0) {
       return res.status(400).json({ 
@@ -588,8 +638,9 @@ r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
     const pendingRequests = await query(`
       SELECT COUNT(*) as count 
       FROM richieste r 
-      WHERE r.inventario_id = $1 AND r.stato = 'in_attesa'
-    `, [id]);
+      JOIN inventario i ON i.id = r.inventario_id
+      WHERE r.inventario_id = $1 AND r.stato = 'in_attesa' AND COALESCE(i.tipo_catalogo, 'libri') = $2
+    `, [id, tipoCatalogo]);
     
     if (pendingRequests[0]?.count > 0) {
       return res.status(400).json({ 
@@ -601,8 +652,9 @@ r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
     const ongoingRepairs = await query(`
       SELECT COUNT(*) as count 
       FROM riparazioni r 
-      WHERE r.inventario_id = $1 AND r.stato IN ('in_corso', 'in_attesa')
-    `, [id]);
+      JOIN inventario i ON i.id = r.inventario_id
+      WHERE r.inventario_id = $1 AND r.stato IN ('in_corso', 'in_attesa') AND COALESCE(i.tipo_catalogo, 'libri') = $2
+    `, [id, tipoCatalogo]);
     
     if (ongoingRepairs[0]?.count > 0) {
       return res.status(400).json({ 
@@ -611,12 +663,18 @@ r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
     }
     
     // Prima elimina le unità associate
-    await query('DELETE FROM inventario_unita WHERE inventario_id = $1', [id]);
+    await query(`
+      DELETE FROM inventario_unita iu
+      USING inventario i
+      WHERE iu.inventario_id = i.id
+        AND iu.inventario_id = $1
+        AND COALESCE(i.tipo_catalogo, 'libri') = $2
+    `, [id, tipoCatalogo]);
     
     // Poi elimina l'articolo principale
-    const result = await query('DELETE FROM inventario WHERE id = $1', [id]);
+    const result = await query(`DELETE FROM inventario WHERE id = $1 AND COALESCE(tipo_catalogo, 'libri') = $2 RETURNING id`, [id, tipoCatalogo]);
     
-    if (result.rowCount === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Elemento inventario non trovato' });
     }
     
@@ -630,14 +688,19 @@ r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 // GET /api/inventario/:id/units - Get all units for an inventory item
 r.get('/:id/units', requireAuth, async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { id } = req.params;
     const result = await query(`
       SELECT iu.*, i.nome as item_name 
       FROM inventario_unita iu
       LEFT JOIN inventario i ON i.id = iu.inventario_id
       WHERE iu.inventario_id = $1 
+        AND COALESCE(i.tipo_catalogo, 'libri') = $2
       ORDER BY iu.codice_univoco
-    `, [id]);
+    `, [id, tipoCatalogo]);
     res.json(result);
   } catch (error) {
     console.error('Errore GET units:', error);
@@ -648,6 +711,10 @@ r.get('/:id/units', requireAuth, async (req, res) => {
 // GET /api/inventario/:id/disponibili - Get available units for an inventory item
 r.get('/:id/disponibili', requireAuth, async (req, res) => {
   try {
+    const tipoCatalogo = resolveCatalogType(req);
+    if (!tipoCatalogo) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+    }
     const { id } = req.params;
     const result = await query(`
       SELECT 
@@ -660,10 +727,11 @@ r.get('/:id/disponibili', requireAuth, async (req, res) => {
       FROM inventario_unita iu
       JOIN inventario i ON i.id = iu.inventario_id
       WHERE iu.inventario_id = $1 
+        AND COALESCE(i.tipo_catalogo, 'libri') = $2
         AND iu.stato = 'disponibile' 
         AND iu.prestito_corrente_id IS NULL
       ORDER BY iu.codice_univoco
-    `, [id]);
+    `, [id, tipoCatalogo]);
     res.json(result);
   } catch (error) {
     console.error('Errore GET disponibili:', error);

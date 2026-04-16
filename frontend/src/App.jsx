@@ -34,6 +34,8 @@ function AppInner() {
   const adminSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className={iconClass} /> },
     { id: 'inventario', label: 'Catalogo', icon: <BookOpen className={iconClass} /> },
+    { id: 'tesi-laurea', label: 'Tesi di laurea', icon: <BookOpen className={iconClass} /> },
+    { id: 'cataloghi', label: 'Cataloghi', icon: <BookOpen className={iconClass} /> },
     { id: 'prestiti', label: 'Prestiti', icon: <ArrowLeftRight className={iconClass} /> },
     { id: 'riparazioni', label: 'Segnalazioni', icon: <AlertTriangle className={iconClass} /> },
     { id: 'utenti', label: 'Utenti', icon: <Users className={iconClass} /> },
@@ -207,6 +209,8 @@ function AppInner() {
     const path = window.location.pathname;
     if (path === '/' || path === '/dashboard') return 'dashboard';
     if (path === '/inventario') return 'inventario';
+    if (path === '/tesi-laurea') return 'tesi-laurea';
+    if (path === '/cataloghi') return 'cataloghi';
     if (path === '/prestiti') return 'prestiti';
     if (path === '/riparazioni') return 'riparazioni';
     if (path === '/utenti') return 'utenti';
@@ -277,6 +281,8 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="w-5 h-5" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="w-5 h-5" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="w-5 h-5" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Users className="w-5 h-5" />} label="Gestione Utenti" tab="utenti" currentTab={tab} onClick={handleTabChange} />
@@ -316,6 +322,8 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="icon" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="icon" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="icon" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="icon" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="icon" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="icon" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Users className="icon" />} label="Gestione Utenti" tab="utenti" currentTab={tab} onClick={handleTabChange} />
@@ -422,7 +430,9 @@ onClick={handleTabChange}
             <main className="flex-1 p-4 lg:p-6 main-content">
               <div className="max-w-7xl mx-auto">
                 {tab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
-                {tab === 'inventario' && <Inventory />}
+                {tab === 'inventario' && <Inventory catalogType="libri" />}
+                {tab === 'tesi-laurea' && <Inventory catalogType="tesi" />}
+                {tab === 'cataloghi' && <Inventory catalogType="cataloghi" />}
                 {tab === 'prestiti' && <Loans 
                   selectedRequestFromNotification={selectedRequestFromNotification} 
                   onRequestHandled={() => setSelectedRequestFromNotification(null)}

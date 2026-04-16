@@ -3,9 +3,9 @@ import * as XLSX from 'xlsx';
 const getApiBase = () => import.meta.env?.VITE_API_BASE_URL || '';
 
 // Export inventario to Excel - ora gestito dal backend
-export const exportInventoryToExcel = async (token) => {
+export const exportInventoryToExcel = async (token, catalogType = 'libri') => {
   try {
-    const response = await fetch(`${getApiBase()}/api/excel/inventario/export`, {
+    const response = await fetch(`${getApiBase()}/api/excel/inventario/export?tipo_catalogo=${encodeURIComponent(catalogType)}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -106,9 +106,9 @@ export const exportRepairsToExcel = (repairs, filename = 'segnalazioni_laba.xlsx
 };
 
 // Generate template for inventory import - ora gestito dal backend
-export const generateInventoryTemplate = async (token) => {
+export const generateInventoryTemplate = async (token, catalogType = 'libri') => {
   try {
-    const response = await fetch(`${getApiBase()}/api/excel/inventario/template`, {
+    const response = await fetch(`${getApiBase()}/api/excel/inventario/template?tipo_catalogo=${encodeURIComponent(catalogType)}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -137,7 +137,7 @@ export const generateInventoryTemplate = async (token) => {
 };
 
 // Import inventory from Excel - ora gestito dal backend
-export const importInventoryFromExcel = async (file, token) => {
+export const importInventoryFromExcel = async (file, token, catalogType = 'libri') => {
   try {
     // Verifica che il file sia valido
     if (!file || !(file instanceof File) && !(file instanceof Blob)) {
@@ -157,7 +157,7 @@ export const importInventoryFromExcel = async (file, token) => {
       reader.readAsDataURL(file);
     });
 
-    const response = await fetch(`${getApiBase()}/api/excel/inventario/import`, {
+    const response = await fetch(`${getApiBase()}/api/excel/inventario/import?tipo_catalogo=${encodeURIComponent(catalogType)}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -26,6 +26,8 @@ const Dashboard = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCatalogTypePicker, setShowCatalogTypePicker] = useState(false);
+  const [selectedCatalogType, setSelectedCatalogType] = useState("libri");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -546,7 +548,7 @@ const Dashboard = ({ onNavigate }) => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowCatalogTypePicker(true)}
               className="group bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl p-6 border border-teal-200 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
             >
               <div className="flex items-center mb-4">
@@ -570,7 +572,7 @@ const Dashboard = ({ onNavigate }) => {
                 </h3>
               </div>
               <p className="text-gray-600">
-                Aggiungi un nuovo elemento all'inventario
+                Scegli se aggiungere un libro, una tesi o un catalogo
               </p>
             </div>
 
@@ -1043,7 +1045,76 @@ const Dashboard = ({ onNavigate }) => {
           fetchDashboardData();
           setShowAddModal(false);
         }}
+        catalogType={selectedCatalogType}
       />
+
+      {/* Catalog Type Picker Modal */}
+      {showCatalogTypePicker && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCatalogTypePicker(false)}
+        >
+          <div
+            className="modal-content max-w-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2 className="text-xl font-bold text-primary">
+                Seleziona tipo di materiale
+              </h2>
+              <button
+                onClick={() => setShowCatalogTypePicker(false)}
+                className="text-muted hover:text-primary"
+              >
+                <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCatalogType("libri");
+                    setShowCatalogTypePicker(false);
+                    setShowAddModal(true);
+                  }}
+                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+                >
+                  <p className="font-semibold text-gray-900">Libro</p>
+                  <p className="text-sm text-gray-600 mt-1">Catalogo principale</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCatalogType("tesi");
+                    setShowCatalogTypePicker(false);
+                    setShowAddModal(true);
+                  }}
+                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+                >
+                  <p className="font-semibold text-gray-900">Tesi</p>
+                  <p className="text-sm text-gray-600 mt-1">Sezione tesi di laurea</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCatalogType("cataloghi");
+                    setShowCatalogTypePicker(false);
+                    setShowAddModal(true);
+                  }}
+                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+                >
+                  <p className="font-semibold text-gray-900">Catalogo</p>
+                  <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Request Modal */}
       <QuickRequestModal
