@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
 const AdvancedLoanModal = ({ isOpen, onClose, onSuccess }) => {
- const [step, setStep] = useState(1); // 1: Seleziona materiale, 2: Seleziona utente, 3: Seleziona unità, 4: Tipo utilizzo, 5: Date
+ const [step, setStep] = useState(1); // 1: Tipo materiale, 2: Seleziona materiale, 3: Seleziona utente, 4: Seleziona unità, 5: Tipo utilizzo, 6: Date
+ const [catalogType, setCatalogType] = useState('libri');
  const [inventory, setInventory] = useState([]);
  const [users, setUsers] = useState([]);
  const [selectedItem, setSelectedItem] = useState(null);
@@ -26,6 +27,7 @@ const AdvancedLoanModal = ({ isOpen, onClose, onSuccess }) => {
  const [loading, setLoading] = useState(false);
  const [error, setError] = useState(null);
  const { token } = useAuth();
+ const withCatalogType = (url) => `${url}${url.includes('?') ? '&' : '?'}tipo_catalogo=${encodeURIComponent(catalogType)}`;
 
  // Fetch data when modal opens
  useEffect(() => {
@@ -37,7 +39,7 @@ const AdvancedLoanModal = ({ isOpen, onClose, onSuccess }) => {
 
  // Auto-set end date for internal use when reaching step 5
  useEffect(() => {
- if (step === 5 && dateRange.dal && !dateRange.al) {
+if (step === 6 && dateRange.dal && !dateRange.al) {
    if (selectedItem?.tipo_prestito === 'solo_interno' || 
        (selectedItem?.tipo_prestito === 'entrambi' && tipoUtilizzo === 'interno')) {
      setDateRange(prev => ({ ...prev, al: prev.dal }));
@@ -47,7 +49,7 @@ const AdvancedLoanModal = ({ isOpen, onClose, onSuccess }) => {
 
 const fetchInventory = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`, {
+    const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
@@ -77,7 +79,7 @@ const fetchUsers = async () => {
 
 const fetchAvailableUnits = async (itemId) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/disponibili`, {
+    const response = await fetch(withCatalogType(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/${itemId}/disponibili`), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (response.ok) {
@@ -96,19 +98,19 @@ const fetchAvailableUnits = async (itemId) => {
  const handleItemSelect = (item) => {
  setSelectedItem(item);
  fetchAvailableUnits(item.id);
- setStep(2);
+ setStep(3);
  };
 
  const handleUserSelect = (user) => {
  setSelectedUser(user);
  setIsManualUser(false);
- setStep(3);
+ setStep(4);
  };
 
  const handleManualUser = () => {
  setIsManualUser(true);
  setSelectedUser(null);
- setStep(3);
+ setStep(4);
  };
 
  const handleUnitToggle = (unit) => {
@@ -175,6 +177,7 @@ body: JSON.stringify({
   data_rientro: dateRange.al,
   unita_ids: selectedUnits.map(u => u.id),
   tipo_utilizzo: selectedItem.tipo_prestito === 'entrambi' ? tipoUtilizzo : null,
+  tipo_catalogo: catalogType,
   note: `Prestito diretto - ${selectedUnits.length} unità`
 })
  });
@@ -203,6 +206,7 @@ body: JSON.stringify({
  dal: new Date().toISOString().split('T')[0], 
  al: '' 
  });
+setCatalogType('libri');
  setManualUser({
  name: '',
  surname: '',
@@ -219,11 +223,12 @@ body: JSON.stringify({
 
  const getStepTitle = () => {
  switch (step) {
-    case 1: return 'Seleziona Materiale';
- case 2: return 'Seleziona Utente';
- case 3: return 'Seleziona Unità';
- case 4: return 'Tipo Utilizzo';
- case 5: return 'Date Prestito';
+    case 1: return 'Tipo Materiale';
+ case 2: return 'Seleziona Materiale';
+ case 3: return 'Seleziona Utente';
+ case 4: return 'Seleziona Unità';
+ case 5: return 'Tipo Utilizzo';
+ case 6: return 'Date Prestito';
  default: return 'Nuovo Prestito';
  }
  };
@@ -240,7 +245,7 @@ body: JSON.stringify({
  + Nuovo Prestito
  </h2>
  <p className="text-sm text-gray-600 mt-1">
- {getStepTitle()} (Passo {step} di 5)
+ {getStepTitle()} (Passo {step} di 6)
  </p>
  </div>
  <button
@@ -256,7 +261,7 @@ body: JSON.stringify({
  {/* Progress Bar */}
  <div className="mt-4">
  <div className="flex items-center">
- {[1, 2, 3, 4, 5].map((s) => (
+ {[1, 2, 3, 4, 5, 6].map((s) => (
  <React.Fragment key={s}>
  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
  s <= step 
@@ -265,7 +270,7 @@ body: JSON.stringify({
  }`}>
  {s}
  </div>
- {s < 5 && (
+ {s < 6 && (
  <div className={`flex-1 h-1 mx-2 ${
  s < step 
  ? 'bg-teal-600' 
@@ -279,8 +284,61 @@ body: JSON.stringify({
  </div>
 
  <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
- {/* Step 1: Select Item */}
+ {/* Step 1: Select Catalog Type */}
  {step === 1 && (
+ <div className="space-y-4">
+ <h3 className="text-lg font-semibold text-gray-800 ">
+                Seleziona il tipo di materiale
+ </h3>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <button
+    onClick={() => {
+      setCatalogType('libri');
+      setSelectedItem(null);
+      setSelectedUnits([]);
+      setAvailableUnits([]);
+      fetchInventory();
+      setStep(2);
+    }}
+    className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
+  >
+    <p className="font-semibold text-gray-900">Libro</p>
+    <p className="text-sm text-gray-600">Catalogo principale</p>
+  </button>
+  <button
+    onClick={() => {
+      setCatalogType('tesi');
+      setSelectedItem(null);
+      setSelectedUnits([]);
+      setAvailableUnits([]);
+      fetchInventory();
+      setStep(2);
+    }}
+    className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
+  >
+    <p className="font-semibold text-gray-900">Tesi</p>
+    <p className="text-sm text-gray-600">Tesi di laurea</p>
+  </button>
+  <button
+    onClick={() => {
+      setCatalogType('cataloghi');
+      setSelectedItem(null);
+      setSelectedUnits([]);
+      setAvailableUnits([]);
+      fetchInventory();
+      setStep(2);
+    }}
+    className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
+  >
+    <p className="font-semibold text-gray-900">Catalogo/Rivista</p>
+    <p className="text-sm text-gray-600">Cataloghi e riviste</p>
+  </button>
+ </div>
+</div>
+ )}
+
+ {/* Step 2: Select Item */}
+ {step === 2 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-gray-800 ">
                 Seleziona il materiale da prestare
@@ -315,8 +373,8 @@ body: JSON.stringify({
  </div>
  )}
 
- {/* Step 2: Select User */}
- {step === 2 && (
+ {/* Step 3: Select User */}
+ {step === 3 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-gray-800 ">
  Seleziona l'utente per: <span className="text-teal-600">{selectedItem?.nome}</span>
@@ -420,8 +478,8 @@ body: JSON.stringify({
  </div>
  )}
 
- {/* Step 3: Select Units */}
- {step === 3 && (
+ {/* Step 4: Select Units */}
+ {step === 4 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-gray-800 ">
  Seleziona le unità di: <span className="text-teal-600">{selectedItem?.nome}</span>
@@ -468,8 +526,8 @@ body: JSON.stringify({
  </div>
  )}
 
- {/* Step 4: Tipo Utilizzo (solo per oggetti "entrambi") */}
- {step === 4 && selectedItem && selectedItem.tipo_prestito === 'entrambi' && (
+ {/* Step 5: Tipo Utilizzo (solo per oggetti "entrambi") */}
+ {step === 5 && selectedItem && selectedItem.tipo_prestito === 'entrambi' && (
    <div className="space-y-4">
      <div className="flex items-center justify-between mb-4">
        <div>
@@ -480,7 +538,7 @@ body: JSON.stringify({
        </div>
        <button
          type="button"
-         onClick={() => setStep(3)}
+        onClick={() => setStep(4)}
          className="text-teal-600 hover:text-teal-800 text-sm"
        >
          ← Cambia Unità
@@ -547,8 +605,8 @@ body: JSON.stringify({
    </div>
  )}
 
- {/* Step 5: Date Range */}
- {step === 5 && (
+ {/* Step 6: Date Range */}
+ {step === 6 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-gray-800 ">
  Date del prestito
@@ -679,10 +737,10 @@ body: JSON.stringify({
  <div className="flex justify-between items-center p-6 border-t ">
       <button
         onClick={() => {
-          if (step === 5 && selectedItem?.tipo_prestito === 'entrambi') {
-            setStep(4); // Torna al tipo utilizzo
-          } else if (step === 4 && selectedItem?.tipo_prestito === 'entrambi') {
-            setStep(3); // Torna alla selezione unità
+          if (step === 6 && selectedItem?.tipo_prestito === 'entrambi') {
+            setStep(5); // Torna al tipo utilizzo
+          } else if (step === 5 && selectedItem?.tipo_prestito === 'entrambi') {
+            setStep(4); // Torna alla selezione unità
           } else if (step > 1) {
             setStep(step - 1);
           } else {
@@ -695,32 +753,32 @@ body: JSON.stringify({
       </button>
  
     <div className="flex space-x-3">
-      {step < 5 ? (
+      {step < 6 ? (
         <button
           onClick={() => {
-            if (step === 1 && !selectedItem) return;
-            if (step === 2 && !selectedUser && !isManualUser) return;
-            if (step === 2 && isManualUser && (!manualUser.name || !manualUser.surname || !manualUser.email || !manualUser.matricola || !manualUser.corso_accademico)) return;
-            if (step === 3 && selectedUnits.length === 0) return;
-            if (step === 4 && selectedItem?.tipo_prestito === 'entrambi' && !tipoUtilizzo) return;
+            if (step === 2 && !selectedItem) return;
+            if (step === 3 && !selectedUser && !isManualUser) return;
+            if (step === 3 && isManualUser && (!manualUser.name || !manualUser.surname || !manualUser.email || !manualUser.matricola || !manualUser.corso_accademico)) return;
+            if (step === 4 && selectedUnits.length === 0) return;
+            if (step === 5 && selectedItem?.tipo_prestito === 'entrambi' && !tipoUtilizzo) return;
             
-            // Smart navigation: Step 3 → Step 4 (for "entrambi") or Step 5 (for others)
-            if (step === 3) {
+            // Smart navigation: Step 4 -> Step 5 (for "entrambi") or Step 6 (for others)
+            if (step === 4) {
               if (selectedItem?.tipo_prestito === 'entrambi') {
-                setStep(4);
-              } else {
                 setStep(5);
+              } else {
+                setStep(6);
               }
             } else {
               setStep(step + 1);
             }
           }}
           disabled={
-            (step === 1 && !selectedItem) ||
-            (step === 2 && !selectedUser && !isManualUser) ||
-            (step === 2 && isManualUser && (!manualUser.name || !manualUser.surname || !manualUser.email || !manualUser.matricola || !manualUser.corso_accademico)) ||
-            (step === 3 && selectedUnits.length === 0) ||
-            (step === 4 && selectedItem?.tipo_prestito === 'entrambi' && !tipoUtilizzo)
+            (step === 2 && !selectedItem) ||
+            (step === 3 && !selectedUser && !isManualUser) ||
+            (step === 3 && isManualUser && (!manualUser.name || !manualUser.surname || !manualUser.email || !manualUser.matricola || !manualUser.corso_accademico)) ||
+            (step === 4 && selectedUnits.length === 0) ||
+            (step === 5 && selectedItem?.tipo_prestito === 'entrambi' && !tipoUtilizzo)
           }
           className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >

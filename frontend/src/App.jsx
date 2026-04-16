@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, BookOpen, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, GraduationCap, NotebookText, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
 import AuthProvider, { useAuth } from "./auth/AuthContext";
 import { NotificationProvider } from "./components/NotificationSystem.jsx";
 import DesktopNotificationManager from "./components/DesktopNotificationManager.jsx";
@@ -34,8 +34,8 @@ function AppInner() {
   const adminSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className={iconClass} /> },
     { id: 'inventario', label: 'Catalogo', icon: <BookOpen className={iconClass} /> },
-    { id: 'tesi-laurea', label: 'Tesi di laurea', icon: <BookOpen className={iconClass} /> },
-    { id: 'cataloghi', label: 'Cataloghi', icon: <BookOpen className={iconClass} /> },
+    { id: 'tesi-laurea', label: 'Tesi di laurea', icon: <GraduationCap className={iconClass} /> },
+    { id: 'cataloghi', label: 'Cataloghi', icon: <NotebookText className={iconClass} /> },
     { id: 'prestiti', label: 'Prestiti', icon: <ArrowLeftRight className={iconClass} /> },
     { id: 'riparazioni', label: 'Segnalazioni', icon: <AlertTriangle className={iconClass} /> },
     { id: 'utenti', label: 'Utenti', icon: <Users className={iconClass} /> },
@@ -281,8 +281,8 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="w-5 h-5" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<GraduationCap className="w-5 h-5" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<NotebookText className="w-5 h-5" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="w-5 h-5" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="w-5 h-5" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Users className="w-5 h-5" />} label="Gestione Utenti" tab="utenti" currentTab={tab} onClick={handleTabChange} />
@@ -322,8 +322,8 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="icon" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="icon" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="icon" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="icon" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<GraduationCap className="icon" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<NotebookText className="icon" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="icon" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="icon" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Users className="icon" />} label="Gestione Utenti" tab="utenti" currentTab={tab} onClick={handleTabChange} />

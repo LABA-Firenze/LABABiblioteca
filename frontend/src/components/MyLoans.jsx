@@ -9,6 +9,8 @@ const MyLoans = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const [showCatalogTypePicker, setShowCatalogTypePicker] = useState(false);
+  const [selectedCatalogType, setSelectedCatalogType] = useState('libri');
   const [activeTab, setActiveTab] = useState('active');
   const { token, user } = useAuth();
 
@@ -87,7 +89,7 @@ const MyLoans = () => {
             <p className="text-gray-600">Gestisci i tuoi prestiti attivi e richiedi nuovi articoli</p>
           </div>
           <button
-            onClick={() => setShowNewRequestModal(true)}
+            onClick={() => setShowCatalogTypePicker(true)}
             className="btn-primary hover-lift flex items-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +232,7 @@ const MyLoans = () => {
                 <p className="mt-1 text-sm text-gray-500">Non hai prestiti attivi al momento.</p>
                 <div className="mt-6">
                   <button
-                    onClick={() => setShowNewRequestModal(true)}
+                    onClick={() => setShowCatalogTypePicker(true)}
                     className="btn-primary hover-lift"
                   >
                     Crea una nuova richiesta
@@ -352,7 +354,7 @@ const MyLoans = () => {
                 <p className="mt-1 text-sm text-gray-500">Non hai richieste in attesa di approvazione.</p>
                 <div className="mt-6">
                   <button
-                    onClick={() => setShowNewRequestModal(true)}
+                    onClick={() => setShowCatalogTypePicker(true)}
                     className="btn-primary hover-lift"
                   >
                     Crea una nuova richiesta
@@ -456,11 +458,68 @@ const MyLoans = () => {
         <NewRequestModal
           isOpen={showNewRequestModal}
           onClose={() => setShowNewRequestModal(false)}
+          catalogType={selectedCatalogType}
           onSuccess={() => {
             setShowNewRequestModal(false);
             fetchData();
           }}
         />
+      )}
+
+      {showCatalogTypePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-xl w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Seleziona tipo di materiale</h3>
+              <button
+                onClick={() => setShowCatalogTypePicker(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('libri');
+                  setShowCatalogTypePicker(false);
+                  setShowNewRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Libro</p>
+                <p className="text-sm text-gray-600 mt-1">Catalogo principale</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('tesi');
+                  setShowCatalogTypePicker(false);
+                  setShowNewRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Tesi</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione tesi di laurea</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('cataloghi');
+                  setShowCatalogTypePicker(false);
+                  setShowNewRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Catalogo/Rivista</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione cataloghi e riviste</p>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

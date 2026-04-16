@@ -82,7 +82,8 @@ const UserArea = () => {
       label: 'Tesi di laurea',
       icon: (
         <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12v4.5c0 1.2 2.2 2.5 5 2.5s5-1.3 5-2.5V12" />
         </svg>
       )
     },
@@ -91,7 +92,8 @@ const UserArea = () => {
       label: 'Cataloghi',
       icon: (
         <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 4h9a2 2 0 012 2v12a2 2 0 01-2 2H6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 8h11M6 12h11M6 16h11" />
         </svg>
       )
     },
