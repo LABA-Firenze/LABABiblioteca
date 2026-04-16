@@ -114,6 +114,8 @@ export async function initDatabase() {
         categoria_id INTEGER REFERENCES categorie_semplici(id),
         posizione VARCHAR(255),
         autore VARCHAR(255),
+        relatore VARCHAR(255),
+        anno_accademico VARCHAR(20),
         luogo_pubblicazione VARCHAR(255),
         data_pubblicazione INTEGER,
         casa_editrice VARCHAR(255),
@@ -230,6 +232,8 @@ export async function initDatabase() {
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS collana_id INTEGER REFERENCES collane(id);
       -- Migrazione campi inventario: fornitore -> autore, aggiungi nuovi campi pubblicazione
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS autore VARCHAR(255);
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS relatore VARCHAR(255);
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS anno_accademico VARCHAR(20);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS luogo_pubblicazione VARCHAR(255);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS data_pubblicazione INTEGER;
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS casa_editrice VARCHAR(255);

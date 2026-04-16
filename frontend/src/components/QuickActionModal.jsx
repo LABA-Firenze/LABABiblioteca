@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const QuickActionModal = ({ isOpen, onClose, action, onSuccess }) => {
+const QuickActionModal = ({ isOpen, onClose, action, onSuccess, catalogType = 'libri' }) => {
  const [loading, setLoading] = useState(false);
  const [error, setError] = useState(null);
  const [formData, setFormData] = useState({
@@ -32,7 +32,7 @@ const QuickActionModal = ({ isOpen, onClose, action, onSuccess }) => {
  units.push({ codice_univoco: code, note: '' });
  }
 
- const response = await fetch('/api/inventario', {
+ const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario?tipo_catalogo=${catalogType}`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
@@ -40,6 +40,7 @@ const QuickActionModal = ({ isOpen, onClose, action, onSuccess }) => {
  },
  body: JSON.stringify({
  ...formData,
+  tipo_catalogo: catalogType,
  unita: units
  })
  });

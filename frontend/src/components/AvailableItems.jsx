@@ -26,6 +26,10 @@ const AvailableItems = ({ catalogType = 'libri' }) => {
     cataloghi: {
       title: 'Cataloghi',
       description: 'Sfoglia e richiedi cataloghi disponibili'
+    },
+    riviste: {
+      title: 'Riviste',
+      description: 'Sfoglia e richiedi riviste disponibili'
     }
   };
   const currentCatalog = catalogMeta[catalogType] || catalogMeta.libri;
@@ -76,6 +80,8 @@ const AvailableItems = ({ catalogType = 'libri' }) => {
   const filteredItems = items.filter(item => {
     const matchesSearch = item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (item.autore && item.autore.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (item.relatore && item.relatore.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (item.anno_accademico && item.anno_accademico.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (item.casa_editrice && item.casa_editrice.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (item.fondo && item.fondo.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (item.settore && item.settore.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -236,7 +242,7 @@ const AvailableItems = ({ catalogType = 'libri' }) => {
                 </div>
 
                 {/* Dati pubblicazione */}
-                {(item.luogo_pubblicazione || item.data_pubblicazione || item.casa_editrice || item.fondo || item.settore) && (
+                {(item.luogo_pubblicazione || item.data_pubblicazione || item.casa_editrice || item.relatore || item.anno_accademico || item.fondo || item.settore) && (
                   <div className="mb-6 space-y-1">
                     {item.luogo_pubblicazione && (
                       <p className="text-sm text-gray-600"><span className="font-medium">Luogo:</span> {item.luogo_pubblicazione}</p>
@@ -244,8 +250,14 @@ const AvailableItems = ({ catalogType = 'libri' }) => {
                     {item.data_pubblicazione && (
                       <p className="text-sm text-gray-600"><span className="font-medium">Anno:</span> {item.data_pubblicazione}</p>
                     )}
-                    {item.casa_editrice && (
+                    {catalogType !== 'tesi' && item.casa_editrice && (
                       <p className="text-sm text-gray-600"><span className="font-medium">Casa Editrice:</span> {item.casa_editrice}</p>
+                    )}
+                    {catalogType === 'tesi' && item.relatore && (
+                      <p className="text-sm text-gray-600"><span className="font-medium">Relatore:</span> {item.relatore}</p>
+                    )}
+                    {catalogType === 'tesi' && item.anno_accademico && (
+                      <p className="text-sm text-gray-600"><span className="font-medium">Anno accademico:</span> {item.anno_accademico}</p>
                     )}
                     {item.fondo && (
                       <p className="text-sm text-gray-600"><span className="font-medium">Fondo:</span> {item.fondo}</p>

@@ -4,6 +4,12 @@ import { query } from '../utils/postgres.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const r = Router();
+const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi', 'riviste']);
+const resolveCatalogType = (req) => {
+  const raw = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || '').toLowerCase().trim();
+  if (!raw) return null;
+  return ALLOWED_CATALOG_TYPES.has(raw) ? raw : null;
+};
 
 function isAdminUser(u) {
   if (!u) return false;
@@ -15,6 +21,11 @@ function isAdminUser(u) {
 // GET /api/prestiti
 r.get('/', requireAuth, async (req, res) => {
   try {
+    const rawCatalogType = String(req.query?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     const wantAll = (req.query.all === '1' || req.query.all === 'true');
     let result;
     
@@ -30,18 +41,26 @@ r.get('/', requireAuth, async (req, res) => {
         LEFT JOIN inventario i ON i.id = p.inventario_id
         LEFT JOIN users u ON (p.chi = (u.name || ' ' || u.surname) OR p.chi LIKE '%' || u.email || '%' OR p.chi = u.email)
         LEFT JOIN richieste r ON r.id = p.richiesta_id
+        ${catalogType ? "WHERE COALESCE(i.tipo_catalogo, 'libri') = $1" : ''}
         ORDER BY p.id DESC
-      `);
+      `, catalogType ? [catalogType] : []);
     } else {
+      const params = [`%${req.user.email}%`, req.user.email];
+      let whereClause = 'WHERE p.chi LIKE $1 OR p.chi = $2';
+      if (catalogType) {
+        params.push(catalogType);
+        whereClause = `(${whereClause}) AND COALESCE(i.tipo_catalogo, 'libri') = $${params.length}`;
+        whereClause = `WHERE ${whereClause}`;
+      }
       result = await query(`
         SELECT p.*, i.nome AS articolo_nome, i.autore AS articolo_autore, i.casa_editrice AS articolo_casa_editrice,
                i.categoria_madre, cs.nome as categoria_figlia
         FROM prestiti p
         LEFT JOIN inventario i ON i.id = p.inventario_id
         LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
-        WHERE p.chi LIKE $1 OR p.chi = $2
+        ${whereClause}
         ORDER BY p.id DESC
-      `, [`%${req.user.email}%`, req.user.email]);
+      `, params);
     }
     
     // Parse JSON fields before sending to frontend
@@ -71,6 +90,11 @@ r.get('/', requireAuth, async (req, res) => {
 // GET /api/prestiti/mie
 r.get('/mie', requireAuth, async (req, res) => {
   try {
+    const rawCatalogType = String(req.query?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     console.log('User requesting loans:', {
       id: req.user.id,
       email: req.user.email,
@@ -78,6 +102,13 @@ r.get('/mie', requireAuth, async (req, res) => {
       surname: req.user.surname
     });
     
+    const params = [req.user.id, `%${req.user.email}%`, req.user.email, `%${req.user.name} ${req.user.surname}%`];
+    let whereClause = 'WHERE r.utente_id = $1 OR p.chi LIKE $2 OR p.chi = $3 OR p.chi LIKE $4';
+    if (catalogType) {
+      params.push(catalogType);
+      whereClause = `(${whereClause}) AND COALESCE(i.tipo_catalogo, 'libri') = $${params.length}`;
+      whereClause = `WHERE ${whereClause}`;
+    }
     const result = await query(`
       SELECT p.*, i.nome AS articolo_nome, i.autore AS articolo_autore, i.casa_editrice AS articolo_casa_editrice,
              i.categoria_madre, cs.nome as categoria_figlia,
@@ -86,9 +117,9 @@ r.get('/mie', requireAuth, async (req, res) => {
       LEFT JOIN inventario i ON i.id = p.inventario_id
       LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
       LEFT JOIN richieste r ON r.id = p.richiesta_id
-      WHERE r.utente_id = $1 OR p.chi LIKE $2 OR p.chi = $3 OR p.chi LIKE $4
+      ${whereClause}
       ORDER BY p.id DESC
-    `, [req.user.id, `%${req.user.email}%`, req.user.email, `%${req.user.name} ${req.user.surname}%`]);
+    `, params);
     
     console.log('Found loans for user:', result.length);
     
@@ -109,6 +140,11 @@ r.get('/mie', requireAuth, async (req, res) => {
 r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { inventario_id, chi, data_uscita, data_rientro, note = null, unita_ids = [] } = req.body || {};
+    const rawCatalogType = String(req.body?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     
     if (!inventario_id || !chi || !data_uscita || !data_rientro) {
       return res.status(400).json({ error: 'campi mancanti' });
@@ -129,7 +165,13 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
     }
     
     // Verifica che l'oggetto esista
-    const inventarioCheck = await query('SELECT id FROM inventario WHERE id = $1', [inventario_id]);
+    const inventarioParams = [inventario_id];
+    let inventarioWhere = 'id = $1';
+    if (catalogType) {
+      inventarioParams.push(catalogType);
+      inventarioWhere += ` AND COALESCE(tipo_catalogo, 'libri') = $${inventarioParams.length}`;
+    }
+    const inventarioCheck = await query(`SELECT id FROM inventario WHERE ${inventarioWhere}`, inventarioParams);
     if (inventarioCheck.length === 0) {
       return res.status(400).json({ error: 'Oggetto non trovato' });
     }
@@ -183,11 +225,27 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { inventario_id, chi, data_uscita, data_rientro, note = null, stato } = req.body || {};
+    const rawCatalogType = String(req.body?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     
     if (!inventario_id || !chi || !data_uscita || !data_rientro || !stato) {
       return res.status(400).json({ error: 'campi mancanti' });
     }
     
+    const inventarioParams = [inventario_id];
+    let inventarioWhere = 'id = $1';
+    if (catalogType) {
+      inventarioParams.push(catalogType);
+      inventarioWhere += ` AND COALESCE(tipo_catalogo, 'libri') = $${inventarioParams.length}`;
+    }
+    const inventarioCheck = await query(`SELECT id FROM inventario WHERE ${inventarioWhere}`, inventarioParams);
+    if (inventarioCheck.length === 0) {
+      return res.status(400).json({ error: 'Oggetto non trovato' });
+    }
+
     const result = await query(`
       UPDATE prestiti 
       SET inventario_id = $1, chi = $2, data_uscita = $3, data_rientro = $4, note = $5, stato = $6, updated_at = CURRENT_TIMESTAMP
@@ -195,11 +253,11 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
       RETURNING *
     `, [inventario_id, chi, data_uscita, data_rientro, note, stato, id]);
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Prestito non trovato' });
     }
     
-    res.json(result.rows[0]);
+    res.json(result[0]);
   } catch (error) {
     console.error('Errore PUT prestito:', error);
     res.status(400).json({ error: error.message || 'Errore aggiornamento prestito' });
@@ -210,9 +268,9 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
 r.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await query('DELETE FROM prestiti WHERE id = $1', [id]);
+    const result = await query('DELETE FROM prestiti WHERE id = $1 RETURNING id', [id]);
     
-    if (result.rowCount === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Prestito non trovato' });
     }
     
@@ -328,9 +386,10 @@ r.put('/:id/rifiuta', requireAuth, requireRole('admin'), async (req, res) => {
       UPDATE richieste 
       SET stato = $1, note = $2 
       WHERE id = $3
+      RETURNING id
     `, ['rifiutata', motivazione, id]);
     
-    if (requestResult.rowCount === 0) {
+    if (requestResult.length === 0) {
       return res.status(404).json({ error: 'Richiesta non trovata' });
     }
     
@@ -369,9 +428,10 @@ r.put('/:id/restituisci', requireAuth, requireRole('admin'), async (req, res) =>
       UPDATE prestiti 
       SET stato = 'restituito', data_rientro = CURRENT_DATE 
       WHERE id = $1
+      RETURNING id
     `, [id]);
     
-    if (result.rowCount === 0) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Prestito non trovato' });
     }
     

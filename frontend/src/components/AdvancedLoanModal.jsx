@@ -290,7 +290,7 @@ setCatalogType('libri');
  <h3 className="text-lg font-semibold text-gray-800 ">
                 Seleziona il tipo di materiale
  </h3>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
   <button
     onClick={() => {
       setCatalogType('libri');
@@ -332,6 +332,20 @@ setCatalogType('libri');
   >
     <p className="font-semibold text-gray-900">Catalogo/Rivista</p>
     <p className="text-sm text-gray-600">Cataloghi e riviste</p>
+  </button>
+  <button
+    onClick={() => {
+      setCatalogType('riviste');
+      setSelectedItem(null);
+      setSelectedUnits([]);
+      setAvailableUnits([]);
+      fetchInventory();
+      setStep(2);
+    }}
+    className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
+  >
+    <p className="font-semibold text-gray-900">Rivista</p>
+    <p className="text-sm text-gray-600">Sezione riviste</p>
   </button>
  </div>
 </div>

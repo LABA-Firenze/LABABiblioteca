@@ -92,12 +92,17 @@ const Dashboard = ({ onNavigate }) => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      setLoading(true);
+      const catalogTypes = ["libri", "tesi", "cataloghi"];
+      const buildCatalogUrl = (baseUrl, type) => `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}tipo_catalogo=${type}`;
+
+      const inventoryPromises = catalogTypes.map((type) =>
+        fetch(buildCatalogUrl(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`, type), {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      );
 
       const promises = [
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        Promise.all(inventoryPromises),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/segnalazioni`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -155,7 +160,7 @@ const Dashboard = ({ onNavigate }) => {
         passwordResetRes,
       ] = await Promise.all(promises);
 
-      if (!inventoryRes.ok)
+      if (!Array.isArray(inventoryRes) || inventoryRes.some((res) => !res.ok))
         throw new Error("Errore nel caricamento inventario");
       if (!reportsRes.ok)
         throw new Error("Errore nel caricamento segnalazioni");
@@ -163,7 +168,8 @@ const Dashboard = ({ onNavigate }) => {
       if (requestsRes && !requestsRes.ok) throw new Error("Errore nel caricamento richieste");
       if (!alertsRes.ok) throw new Error("Errore nel caricamento avvisi");
 
-      const inventoryData = await inventoryRes.json();
+      const inventoryDatasets = await Promise.all(inventoryRes.map((res) => res.json()));
+      const inventoryData = inventoryDatasets.flat();
       const reportsData = await reportsRes.json();
       const prestitiData = await prestitiRes.json();
       const requestsData = requestsRes ? await requestsRes.json() : [];
@@ -1073,7 +1079,7 @@ const Dashboard = ({ onNavigate }) => {
             </div>
 
             <div className="modal-body">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1109,6 +1115,18 @@ const Dashboard = ({ onNavigate }) => {
                 >
                   <p className="font-semibold text-gray-900">Catalogo</p>
                   <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCatalogType("riviste");
+                    setShowCatalogTypePicker(false);
+                    setShowAddModal(true);
+                  }}
+                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+                >
+                  <p className="font-semibold text-gray-900">Rivista</p>
+                  <p className="text-sm text-gray-600 mt-1">Sezione riviste</p>
                 </button>
               </div>
             </div>

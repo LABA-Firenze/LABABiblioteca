@@ -4,10 +4,21 @@ import { query } from '../utils/postgres.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const r = Router();
+const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi', 'riviste']);
+const resolveCatalogType = (req) => {
+  const raw = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || '').toLowerCase().trim();
+  if (!raw) return null;
+  return ALLOWED_CATALOG_TYPES.has(raw) ? raw : null;
+};
 
 // GET /api/richieste
 r.get('/', requireAuth, async (req, res) => {
   try {
+    const rawCatalogType = String(req.query?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     const wantAll = (req.query.all === '1' || req.query.all === 'true');
     let result;
     
@@ -24,16 +35,23 @@ r.get('/', requireAuth, async (req, res) => {
         FROM richieste r
         LEFT JOIN users u ON r.utente_id = u.id
         LEFT JOIN inventario i ON r.inventario_id = i.id
+        ${catalogType ? "WHERE COALESCE(i.tipo_catalogo, 'libri') = $1" : ''}
         ORDER BY r.created_at DESC
-      `);
+      `, catalogType ? [catalogType] : []);
     } else {
+      const params = [req.user.id];
+      let whereClause = 'WHERE r.utente_id = $1';
+      if (catalogType) {
+        params.push(catalogType);
+        whereClause += ` AND COALESCE(i.tipo_catalogo, 'libri') = $${params.length}`;
+      }
       result = await query(`
         SELECT r.*, i.nome as oggetto_nome, i.nome as articolo_nome
         FROM richieste r
         LEFT JOIN inventario i ON r.inventario_id = i.id
-        WHERE r.utente_id = $1
+        ${whereClause}
         ORDER BY r.created_at DESC
-      `, [req.user.id]);
+      `, params);
     }
     
     res.json(result || []);
@@ -46,13 +64,24 @@ r.get('/', requireAuth, async (req, res) => {
 // GET /api/richieste/mie
 r.get('/mie', requireAuth, async (req, res) => {
   try {
+    const rawCatalogType = String(req.query?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
+    const params = [req.user.id];
+    let whereClause = 'WHERE r.utente_id = $1';
+    if (catalogType) {
+      params.push(catalogType);
+      whereClause += ` AND COALESCE(i.tipo_catalogo, 'libri') = $${params.length}`;
+    }
     const result = await query(`
       SELECT r.*, i.nome as oggetto_nome, i.nome as articolo_nome
       FROM richieste r
       LEFT JOIN inventario i ON r.inventario_id = i.id
-      WHERE r.utente_id = $1
+      ${whereClause}
       ORDER BY r.created_at DESC
-    `, [req.user.id]);
+    `, params);
     
     res.json(result || []);
   } catch (error) {
@@ -82,6 +111,11 @@ r.post('/', requireAuth, async (req, res) => {
     }
     
     const { unit_id, inventario_id, dal, al, motivo, note, tipo_utilizzo } = req.body || {};
+    const rawCatalogType = String(req.body?.tipo_catalogo || '').toLowerCase().trim();
+    const catalogType = resolveCatalogType(req);
+    if (rawCatalogType && !catalogType) {
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+    }
     
     console.log(`🔍 Creating request - unit_id: ${unit_id}, inventario_id: ${inventario_id}`);
     
@@ -116,7 +150,13 @@ r.post('/', requireAuth, async (req, res) => {
     }
     
     // Verifica che l'oggetto esista e controlla il tipo
-    const inventarioCheck = await query('SELECT id, tipo_prestito FROM inventario WHERE id = $1', [actualInventarioId]);
+    const inventarioParams = [actualInventarioId];
+    let inventarioWhere = 'id = $1';
+    if (catalogType) {
+      inventarioParams.push(catalogType);
+      inventarioWhere += ` AND COALESCE(tipo_catalogo, 'libri') = $${inventarioParams.length}`;
+    }
+    const inventarioCheck = await query(`SELECT id, tipo_prestito FROM inventario WHERE ${inventarioWhere}`, inventarioParams);
     if (inventarioCheck.length === 0) {
       return res.status(400).json({ error: 'Oggetto non trovato' });
     }

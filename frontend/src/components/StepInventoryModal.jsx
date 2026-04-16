@@ -16,6 +16,8 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
     quantita_totale: 1,
     scaffale: '',
     autore: '',
+    relatore: '',
+    anno_accademico: '',
     luogo_pubblicazione: '',
     data_pubblicazione: '',
     casa_editrice: '',
@@ -46,6 +48,8 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
           quantita_totale: editingItem.quantita_totale || 1,
           scaffale: editingItem.posizione || '',
           autore: editingItem.autore || '',
+          relatore: editingItem.relatore || '',
+          anno_accademico: editingItem.anno_accademico || '',
           luogo_pubblicazione: editingItem.luogo_pubblicazione || '',
           data_pubblicazione: editingItem.data_pubblicazione || '',
           casa_editrice: editingItem.casa_editrice || '',
@@ -67,6 +71,8 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
         quantita_totale: 1,
         scaffale: '',
         autore: '',
+        relatore: '',
+        anno_accademico: '',
         luogo_pubblicazione: '',
         data_pubblicazione: '',
         casa_editrice: '',
@@ -254,9 +260,11 @@ const handleSubmit = async () => {
     categoria_madre: categoriaMadreValue, // Tutti i corsi accademici disponibili
     categoria_id: formData.categoria_id || null,
     autore: formData.autore || null,
+    relatore: formData.relatore || null,
+    anno_accademico: formData.anno_accademico || null,
     luogo_pubblicazione: formData.luogo_pubblicazione || null,
     data_pubblicazione: formData.data_pubblicazione ? parseInt(formData.data_pubblicazione) : null,
-    casa_editrice: formData.casa_editrice || null,
+    casa_editrice: catalogType === 'tesi' ? null : (formData.casa_editrice || null),
     fondo: formData.fondo || null,
     settore: formData.settore || null,
     location: formData.location || null,
@@ -297,9 +305,10 @@ const handleSubmit = async () => {
  };
 
 const getStepTitle = () => {
+  const publicationTitle = catalogType === 'tesi' ? 'Dati tesi' : 'Dati pubblicazione';
   switch (step) {
     case 1: return 'Informazioni Base';
-    case 2: return 'Dati pubblicazione';
+    case 2: return publicationTitle;
     case 3: return 'Tipo di Utilizzo';
     case 4: return 'Corso e Categoria';
     case 5: return 'Codici Univoci';
@@ -439,13 +448,13 @@ return (
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Autore</label>
+                  <label className="form-label">{catalogType === 'tesi' ? 'Alunno' : 'Autore'}</label>
                   <input
                     type="text"
                     value={formData.autore}
                     onChange={(e) => setFormData(prev => ({ ...prev, autore: e.target.value }))}
                     className="input-field"
-                    placeholder="Nome dell'autore"
+                    placeholder={catalogType === 'tesi' ? "Nome dell'alunno" : "Nome dell'autore"}
                   />
                 </div>
 
@@ -458,7 +467,7 @@ return (
  {step === 2 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-primary mb-4">
-   Dati pubblicazione
+  {catalogType === 'tesi' ? 'Dati tesi' : 'Dati pubblicazione'}
  </h3>
  
  <div className="space-y-4">
@@ -486,16 +495,41 @@ return (
      />
    </div>
 
-   <div className="form-group">
-     <label className="form-label">Casa Editrice</label>
-     <input
-       type="text"
-       value={formData.casa_editrice}
-       onChange={(e) => setFormData(prev => ({ ...prev, casa_editrice: e.target.value }))}
-       className="input-field"
-       placeholder="Es. Mondadori, Einaudi, Feltrinelli"
-     />
-   </div>
+  {catalogType === 'tesi' ? (
+    <>
+      <div className="form-group">
+        <label className="form-label">Relatore</label>
+        <input
+          type="text"
+          value={formData.relatore}
+          onChange={(e) => setFormData(prev => ({ ...prev, relatore: e.target.value }))}
+          className="input-field"
+          placeholder="Nome relatore"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Anno accademico</label>
+        <input
+          type="text"
+          value={formData.anno_accademico}
+          onChange={(e) => setFormData(prev => ({ ...prev, anno_accademico: e.target.value }))}
+          className="input-field"
+          placeholder="Es. 2025/2026"
+        />
+      </div>
+    </>
+  ) : (
+    <div className="form-group">
+      <label className="form-label">Casa Editrice</label>
+      <input
+        type="text"
+        value={formData.casa_editrice}
+        onChange={(e) => setFormData(prev => ({ ...prev, casa_editrice: e.target.value }))}
+        className="input-field"
+        placeholder="Es. Mondadori, Einaudi, Feltrinelli"
+      />
+    </div>
+  )}
 
    {/* Tipo di Utilizzo moved to Step 3 */}
  </div>
@@ -652,11 +686,18 @@ Tipo di Utilizzo
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Titolo:</strong> {formData.nome}</div>
                   <div><strong>Quantità:</strong> {formData.quantita_totale}</div>
-                  <div><strong>Autore:</strong> {formData.autore || 'Non specificato'}</div>
+                  <div><strong>{catalogType === 'tesi' ? 'Alunno' : 'Autore'}:</strong> {formData.autore || 'Non specificato'}</div>
                   <div><strong>Scaffale:</strong> {formData.scaffale || 'Non specificato'}</div>
                   <div><strong>Luogo:</strong> {formData.luogo_pubblicazione || 'Non specificato'}</div>
                   <div><strong>Anno:</strong> {formData.data_pubblicazione || 'Non specificato'}</div>
-                  <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || 'Non specificato'}</div>
+                  {catalogType === 'tesi' ? (
+                    <>
+                      <div><strong>Relatore:</strong> {formData.relatore || 'Non specificato'}</div>
+                      <div><strong>Anno accademico:</strong> {formData.anno_accademico || 'Non specificato'}</div>
+                    </>
+                  ) : (
+                    <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || 'Non specificato'}</div>
+                  )}
                   <div><strong>Fondo:</strong> {formData.fondo || 'Non specificato'}</div>
                   <div><strong>Settore:</strong> {categories.find(c => c.id === formData.categoria_id)?.nome || 'Non specificato'}</div>
                 </div>

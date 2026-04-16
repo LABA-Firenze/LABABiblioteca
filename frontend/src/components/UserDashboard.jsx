@@ -65,12 +65,17 @@ const UserDashboard = () => {
     try {
       setLoading(true);
       setError(null);
+      const catalogTypes = ['libri', 'tesi', 'cataloghi'];
+      const buildCatalogUrl = (baseUrl, type) => `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}tipo_catalogo=${type}`;
+      const inventoryPromises = catalogTypes.map((type) =>
+        fetch(buildCatalogUrl(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`, type), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      );
 
       // Fetch all data in parallel
       const [inventoryRes, requestsRes, reportsRes, loansRes, penaltiesRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
+        Promise.all(inventoryPromises),
         fetch(`${import.meta.env.VITE_API_BASE_URL}/api/richieste/mie`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
@@ -86,8 +91,8 @@ const UserDashboard = () => {
       ]);
 
       // Process inventory data
-      if (inventoryRes.ok) {
-        const inventoryData = await inventoryRes.json();
+      if (Array.isArray(inventoryRes) && inventoryRes.every((res) => res.ok)) {
+        const inventoryData = (await Promise.all(inventoryRes.map((res) => res.json()))).flat();
         // Conta le UNITÀ disponibili totali, non gli articoli
         // Assicuriamoci che unita_disponibili sia un numero
         const totalAvailableUnits = inventoryData.reduce((total, item) => {
@@ -451,7 +456,7 @@ const UserDashboard = () => {
               <p className="text-sm text-gray-500">Nessuna richiesta recente</p>
               <p className="text-xs text-gray-400 mt-1">Le tue richieste appariranno qui</p>
               <button
-                onClick={() => setShowQuickRequestModal(true)}
+                onClick={() => setShowCatalogTypePicker(true)}
                 className="mt-4 text-sm text-teal-600 hover:text-teal-800 font-medium"
               >
                 Crea la tua prima richiesta →
@@ -488,7 +493,7 @@ const UserDashboard = () => {
                 </svg>
               </button>
             </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <button
                 type="button"
                 onClick={() => {
@@ -524,6 +529,18 @@ const UserDashboard = () => {
               >
                 <p className="font-semibold text-gray-900">Catalogo</p>
                 <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCatalogType('riviste');
+                  setShowCatalogTypePicker(false);
+                  setShowQuickRequestModal(true);
+                }}
+                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
+              >
+                <p className="font-semibold text-gray-900">Rivista</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione riviste</p>
               </button>
             </div>
           </div>

@@ -99,6 +99,11 @@ const Inventory = ({ catalogType = 'libri' }) => {
       title: 'Cataloghi',
       subtitle: 'Gestisci e monitora tutti i cataloghi',
       newItemLabel: 'Nuovo Catalogo'
+    },
+    riviste: {
+      title: 'Riviste',
+      subtitle: 'Gestisci e monitora tutte le riviste',
+      newItemLabel: 'Nuova Rivista'
     }
   };
   const currentCatalog = catalogMeta[catalogType] || catalogMeta.libri;
@@ -249,6 +254,8 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
     const matchesSearch = !searchTerm || (
       item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.autore && item.autore.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.relatore && item.relatore.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.anno_accademico && item.anno_accademico.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.casa_editrice && item.casa_editrice.toLowerCase().includes(searchTerm.toLowerCase())) ||
       item.categoria_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.categoria_madre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -949,7 +956,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                       </div>
  </div>
                   {/* Dati pubblicazione */}
-                  {(item.luogo_pubblicazione || item.data_pubblicazione || item.casa_editrice || item.fondo || item.settore || item.location) && (
+                  {(item.luogo_pubblicazione || item.data_pubblicazione || item.casa_editrice || item.relatore || item.anno_accademico || item.fondo || item.settore || item.location) && (
                     <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                       {item.location && (
                         <p className="text-sm text-gray-600"><span className="font-medium">Posizione:</span> {item.location}</p>
@@ -957,8 +964,14 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                       {item.data_pubblicazione && (
                         <p className="text-sm text-gray-600"><span className="font-medium">Anno:</span> {item.data_pubblicazione}</p>
                       )}
-                      {item.casa_editrice && (
+                      {catalogType !== 'tesi' && item.casa_editrice && (
                         <p className="text-sm text-gray-600"><span className="font-medium">Casa Editrice:</span> {item.casa_editrice}</p>
+                      )}
+                      {catalogType === 'tesi' && item.relatore && (
+                        <p className="text-sm text-gray-600"><span className="font-medium">Relatore:</span> {item.relatore}</p>
+                      )}
+                      {catalogType === 'tesi' && item.anno_accademico && (
+                        <p className="text-sm text-gray-600"><span className="font-medium">Anno accademico:</span> {item.anno_accademico}</p>
                       )}
                       {item.fondo && (
                         <p className="text-sm text-gray-600"><span className="font-medium">Fondo:</span> {item.fondo}</p>

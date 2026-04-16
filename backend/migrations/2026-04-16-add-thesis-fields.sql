@@ -1,0 +1,5 @@
+ALTER TABLE inventario
+ADD COLUMN IF NOT EXISTS relatore VARCHAR(255);
+
+ALTER TABLE inventario
+ADD COLUMN IF NOT EXISTS anno_accademico VARCHAR(20);

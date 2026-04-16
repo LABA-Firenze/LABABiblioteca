@@ -7,7 +7,7 @@ import * as XLSX from 'xlsx';
 import { uploadFile, deleteFile } from '../utils/supabaseStorage.js';
 
 const r = Router();
-const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi']);
+const ALLOWED_CATALOG_TYPES = new Set(['libri', 'tesi', 'cataloghi', 'riviste']);
 const resolveCatalogType = (req) => {
   const rawType = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || 'libri').toLowerCase().trim();
   return ALLOWED_CATALOG_TYPES.has(rawType) ? rawType : null;
@@ -26,7 +26,7 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
   try {
     const tipoCatalogo = resolveCatalogType(req);
     if (!tipoCatalogo) {
-      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
     }
     const result = await query(`
       SELECT 
@@ -109,7 +109,7 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
   try {
     const tipoCatalogo = resolveCatalogType(req);
     if (!tipoCatalogo) {
-      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi' });
+      return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
     }
     // Verifica che i dati del file siano presenti
     const { fileName, fileSize, fileType, fileData } = req.body;

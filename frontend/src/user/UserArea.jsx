@@ -98,6 +98,16 @@ const UserArea = () => {
       )
     },
     {
+      id: 'available-items-magazines',
+      label: 'Riviste',
+      icon: (
+        <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 5h10a2 2 0 012 2v12H5V7a2 2 0 012-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h6M9 13h6M9 17h4" />
+        </svg>
+      )
+    },
+    {
       id: 'report-fault',
       label: 'Segnala Guasto',
       icon: (
@@ -122,6 +132,8 @@ const UserArea = () => {
         return <AvailableItems catalogType="tesi" />;
       case 'available-items-catalogs':
         return <AvailableItems catalogType="cataloghi" />;
+      case 'available-items-magazines':
+        return <AvailableItems catalogType="riviste" />;
       case 'report-fault':
         return <ReportFault />;
       default:
