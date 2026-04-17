@@ -16,6 +16,44 @@ function resolveCatalogType(req) {
   return ALLOWED_CATALOG_TYPES.has(rawType) ? rawType : null;
 }
 
+/** Normalizza corsi_assegnati dal body e verifica che esistano in tabella corsi. */
+async function validateAssignedCourses(corsi_assegnati) {
+  const raw = Array.isArray(corsi_assegnati) ? corsi_assegnati : [];
+  const normalized = [...new Set(raw.map((c) => String(c || '').trim()).filter(Boolean))];
+  if (normalized.length === 0) {
+    return { error: 'Corso accademico richiesto' };
+  }
+  const ph = normalized.map((_, i) => `$${i + 1}`).join(', ');
+  const valid = await query(`SELECT corso FROM corsi WHERE corso IN (${ph})`, normalized);
+  if (valid.length !== normalized.length) {
+    return { error: 'Corso accademico non valido' };
+  }
+  return { courses: normalized };
+}
+
+/**
+ * Tesi: solo i corsi passati nel body (di solito uno). Libri/cataloghi/riviste: tutti i corsi in anagrafica.
+ */
+async function resolveAssignedCoursesForCatalog(tipoCatalogo, corsi_assegnati, categoria_madre) {
+  let categoriaMadreValue = (categoria_madre && String(categoria_madre).trim()) || '';
+  if (tipoCatalogo === 'tesi') {
+    const { courses, error } = await validateAssignedCourses(corsi_assegnati);
+    if (error) return { error };
+    if (!categoriaMadreValue) categoriaMadreValue = courses[0] || '';
+    return { courses, categoriaMadreValue };
+  }
+  const allRows = await query('SELECT corso FROM corsi ORDER BY corso');
+  const courses = allRows.map((r) => r.corso);
+  if (courses.length === 0) {
+    return { error: 'Nessun corso configurato nel sistema' };
+  }
+  if (!categoriaMadreValue) {
+    const joined = courses.join(', ');
+    categoriaMadreValue = joined.length <= 255 ? joined : 'Tutti i corsi';
+  }
+  return { courses, categoriaMadreValue };
+}
+
 // GET /api/inventario - Solo per admin
 r.get('/', requireAuth, requireRole('admin'), async (req, res) => {
   try {
@@ -100,7 +138,7 @@ r.get('/disponibili', requireAuth, async (req, res) => {
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome)
       `, [tipoCatalogo]);
   } else {
-      // Utenti vedono tutti i libri (ogni libro è assegnato a tutti i corsi)
+      // Utenti: materiali assegnati al proprio corso (o senza righe inventario_corsi, legacy)
       result = await query(`
         SELECT
           i.id, i.nome, i.categoria_madre, i.categoria_id, i.posizione, i.autore, i.relatore, i.anno_accademico, i.luogo_pubblicazione, i.data_pubblicazione, i.casa_editrice, i.fondo, i.settore, i.tipo_prestito, i.location,
@@ -114,8 +152,13 @@ r.get('/disponibili', requireAuth, async (req, res) => {
         FROM inventario i
         LEFT JOIN categorie_semplici cs ON cs.id = i.categoria_id
         WHERE COALESCE(i.tipo_catalogo, 'libri') = $1
+          AND (
+            $2::text IS NULL
+            OR NOT EXISTS (SELECT 1 FROM inventario_corsi ic0 WHERE ic0.inventario_id = i.id)
+            OR EXISTS (SELECT 1 FROM inventario_corsi icf WHERE icf.inventario_id = i.id AND icf.corso = $2)
+          )
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome)
-      `, [tipoCatalogo]);
+      `, [tipoCatalogo, userCourse]);
     }
 
     res.json(result);
@@ -160,7 +203,6 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome), iu.codice_univoco
       `, [tipoCatalogo]);
     } else {
-      // Utenti vedono tutte le unità disponibili (ogni libro è assegnato a tutti i corsi)
       result = await query(`
         SELECT
           iu.id, iu.codice_univoco, iu.stato,
@@ -174,8 +216,13 @@ r.get('/unita-disponibili', requireAuth, async (req, res) => {
           AND iu.richiesta_riservata_id IS NULL
           AND i.in_manutenzione = FALSE
           AND COALESCE(i.tipo_catalogo, 'libri') = $1
+          AND (
+            $2::text IS NULL
+            OR NOT EXISTS (SELECT 1 FROM inventario_corsi ic0 WHERE ic0.inventario_id = i.id)
+            OR EXISTS (SELECT 1 FROM inventario_corsi icf WHERE icf.inventario_id = i.id AND icf.corso = $2)
+          )
         ORDER BY COALESCE((SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id AND stato = 'disponibile'), (SELECT MIN(codice_univoco) FROM inventario_unita WHERE inventario_id = i.id), i.nome), iu.codice_univoco
-      `, [tipoCatalogo]);
+      `, [tipoCatalogo, userCourse]);
     }
 
     console.log(`📦 Found ${result.length} available units for user`);
@@ -276,7 +323,7 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
     } = req.body || {};
     
     if (!nome) return res.status(400).json({ error: 'nome richiesto' });
-    // categoria_madre non è più obbligatoria - ogni libro viene assegnato automaticamente a tutti i corsi
+    // Libri/cataloghi/riviste → tutti i corsi; tesi → solo corso/i nel body
     if (!quantita_totale || quantita_totale < 1) return res.status(400).json({ error: 'quantità totale richiesta' });
     if (!['solo_interno', 'solo_esterno', 'entrambi'].includes(tipo_prestito)) {
       return res.status(400).json({ error: 'tipo_prestito deve essere "solo_interno", "solo_esterno" o "entrambi"' });
@@ -301,19 +348,15 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
       }
     }
     
-    // Assign to ALL courses automatically - recupera tutti i corsi
-    const allCourses = await query('SELECT corso FROM corsi');
-    
-    // Popola categoria_madre con tutti i corsi se non fornito dal frontend
-    let categoriaMadreValue = categoria_madre || '';
-    if (!categoriaMadreValue && allCourses.length > 0) {
-      const courseNames = allCourses.map(c => c.corso).join(', ');
-      // Se supera 255 caratteri, usa "Tutti i corsi" invece
-      categoriaMadreValue = courseNames.length <= 255 ? courseNames : 'Tutti i corsi';
-    } else if (!categoriaMadreValue) {
-      categoriaMadreValue = 'Tutti i corsi';
+    const {
+      courses: assignedCourses,
+      categoriaMadreValue,
+      error: resolveErr
+    } = await resolveAssignedCoursesForCatalog(tipoCatalogo, corsi_assegnati, categoria_madre);
+    if (resolveErr) {
+      return res.status(400).json({ error: resolveErr });
     }
-    
+
     // Create inventory item
     const result = await query(`
       INSERT INTO inventario (nome, categoria_madre, categoria_id, posizione, autore, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita, in_manutenzione, tipo_prestito, location, tipo_catalogo)
@@ -343,13 +386,12 @@ r.post('/', requireAuth, requireRole('admin'), async (req, res) => {
       }
     }
     
-    // Assegna tutti i corsi tramite inventario_corsi
-    for (const courseRow of allCourses) {
+    for (const corso of assignedCourses) {
       await query(`
         INSERT INTO inventario_corsi (inventario_id, corso)
         VALUES ($1, $2)
         ON CONFLICT (inventario_id, corso) DO NOTHING
-      `, [newItem.id, courseRow.corso]);
+      `, [newItem.id, corso]);
     }
     
     res.status(201).json(newItem);
@@ -389,10 +431,18 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
     } = req.body || {};
 
     if (!nome) return res.status(400).json({ error: 'nome richiesto' });
-    // categoria_madre non è più obbligatoria - ogni libro viene assegnato automaticamente a tutti i corsi
     if (!quantita_totale || quantita_totale < 1) return res.status(400).json({ error: 'quantità totale richiesta' });
     if (!['solo_interno', 'solo_esterno', 'entrambi'].includes(tipo_prestito)) {
       return res.status(400).json({ error: 'tipo_prestito deve essere "solo_interno", "solo_esterno" o "entrambi"' });
+    }
+
+    const {
+      courses: putAssignedCourses,
+      categoriaMadreValue: categoriaMadreResolved,
+      error: resolvePutErr
+    } = await resolveAssignedCoursesForCatalog(tipoCatalogo, corsi_assegnati, categoria_madre);
+    if (resolvePutErr) {
+      return res.status(400).json({ error: resolvePutErr });
     }
 
     // Nome può essere duplicato: l'identificazione è tramite ID/codice univoco
@@ -406,7 +456,7 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
       WHERE id = $18
         AND COALESCE(tipo_catalogo, 'libri') = $19
       RETURNING *
-    `, [nome, categoria_madre || '', categoria_id, posizione, autore, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, in_manutenzione || false, tipo_prestito, location, id, tipoCatalogo]);
+    `, [nome, categoriaMadreResolved, categoria_id, posizione, autore, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, settore, quantita_totale, quantita_totale, in_manutenzione || false, tipo_prestito, location, id, tipoCatalogo]);
 
     if (result.length === 0) {
       return res.status(404).json({ error: 'Elemento inventario non trovato' });
@@ -597,15 +647,12 @@ r.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
       }
     }
 
-    // Update courses: delete existing and re-create
     await query('DELETE FROM inventario_corsi WHERE inventario_id = $1', [id]);
-    if (corsi_assegnati && corsi_assegnati.length > 0) {
-      for (const corso of corsi_assegnati) {
-        await query(`
-          INSERT INTO inventario_corsi (inventario_id, corso)
-          VALUES ($1, $2)
-        `, [id, corso]);
-      }
+    for (const corso of putAssignedCourses) {
+      await query(`
+        INSERT INTO inventario_corsi (inventario_id, corso)
+        VALUES ($1, $2)
+      `, [id, corso]);
     }
     
     res.json(result[0]);
@@ -720,6 +767,20 @@ r.get('/:id/disponibili', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
     }
     const { id } = req.params;
+    const userCourse = getUserCourse(req);
+    const role = (req.user.ruolo || '').toLowerCase();
+    const isElevated = role === 'admin' || role === 'supervisor';
+
+    const visibilitySql = isElevated
+      ? ''
+      : ` AND (
+          $3::text IS NULL
+          OR NOT EXISTS (SELECT 1 FROM inventario_corsi ic0 WHERE ic0.inventario_id = i.id)
+          OR EXISTS (SELECT 1 FROM inventario_corsi icf WHERE icf.inventario_id = i.id AND icf.corso = $3)
+        )`;
+
+    const params = isElevated ? [id, tipoCatalogo] : [id, tipoCatalogo, userCourse];
+
     const result = await query(`
       SELECT 
         iu.id,
@@ -734,8 +795,9 @@ r.get('/:id/disponibili', requireAuth, async (req, res) => {
         AND COALESCE(i.tipo_catalogo, 'libri') = $2
         AND iu.stato = 'disponibile' 
         AND iu.prestito_corrente_id IS NULL
+        ${visibilitySql}
       ORDER BY iu.codice_univoco
-    `, [id, tipoCatalogo]);
+    `, params);
     res.json(result);
   } catch (error) {
     console.error('Errore GET disponibili:', error);
