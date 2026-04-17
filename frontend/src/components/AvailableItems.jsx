@@ -16,8 +16,8 @@ const AvailableItems = ({ catalogType = 'libri' }) => {
 
   const catalogMeta = {
     libri: {
-      title: 'Catalogo',
-      description: 'Sfoglia e richiedi materiali del catalogo'
+      title: 'Libri',
+      description: 'Sfoglia e richiedi i libri disponibili'
     },
     tesi: {
       title: 'Tesi di laurea',

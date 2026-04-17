@@ -86,8 +86,8 @@ const Inventory = ({ catalogType = 'libri' }) => {
 
   const catalogMeta = {
     libri: {
-      title: 'Catalogo',
-      subtitle: 'Gestisci e monitora tutti i materiali della biblioteca',
+      title: 'Libri',
+      subtitle: 'Gestisci e monitora tutti i libri della biblioteca',
       newItemLabel: 'Nuovo Articolo'
     },
     tesi: {
@@ -569,7 +569,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">Totale Articoli</p>
                 <p className="text-3xl font-bold text-gray-900">{inventory.length}</p>
-                <p className="text-sm text-gray-500">Catalogo completo</p>
+                <p className="text-sm text-gray-500">Elenco libri completo</p>
               </div>
               <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-teal-600" />

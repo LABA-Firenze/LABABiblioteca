@@ -33,7 +33,7 @@ function AppInner() {
   const iconClass = "w-5 h-5";
   const adminSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className={iconClass} /> },
-    { id: 'inventario', label: 'Catalogo', icon: <BookOpen className={iconClass} /> },
+    { id: 'inventario', label: 'Libri', icon: <BookOpen className={iconClass} /> },
     { id: 'tesi-laurea', label: 'Tesi di laurea', icon: <GraduationCap className={iconClass} /> },
     { id: 'cataloghi', label: 'Cataloghi', icon: <NotebookText className={iconClass} /> },
     { id: 'riviste', label: 'Riviste', icon: <Newspaper className={iconClass} /> },
@@ -282,7 +282,7 @@ function AppInner() {
             {isAdmin ? (
               <>
                 <NavButton icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<GraduationCap className="w-5 h-5" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<NotebookText className="w-5 h-5" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="w-5 h-5" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />
@@ -324,7 +324,7 @@ function AppInner() {
             ) : (
               <>
                 <NavButton icon={<LayoutDashboard className="icon" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="icon" />} label="Catalogo" tab="inventario" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<BookOpen className="icon" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<GraduationCap className="icon" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<NotebookText className="icon" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="icon" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />

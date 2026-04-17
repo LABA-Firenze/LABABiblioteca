@@ -491,7 +491,7 @@ const MyLoans = () => {
                 className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
               >
                 <p className="font-semibold text-gray-900">Libro</p>
-                <p className="text-sm text-gray-600 mt-1">Catalogo principale</p>
+                <p className="text-sm text-gray-600 mt-1">Sezione libri</p>
               </button>
               <button
                 type="button"
@@ -514,7 +514,7 @@ const MyLoans = () => {
                 }}
                 className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
               >
-                <p className="font-semibold text-gray-900">Catalogo/Rivista</p>
+                <p className="font-semibold text-gray-900">Cataloghi/Riviste</p>
                 <p className="text-sm text-gray-600 mt-1">Sezione cataloghi e riviste</p>
               </button>
             </div>

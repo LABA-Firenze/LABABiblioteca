@@ -303,7 +303,7 @@ setCatalogType('libri');
     className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
   >
     <p className="font-semibold text-gray-900">Libro</p>
-    <p className="text-sm text-gray-600">Catalogo principale</p>
+    <p className="text-sm text-gray-600">Sezione libri</p>
   </button>
   <button
     onClick={() => {
@@ -330,7 +330,7 @@ setCatalogType('libri');
     }}
     className="p-4 border border-gray-300 rounded-lg hover:bg-teal-50 text-left transition-colors"
   >
-    <p className="font-semibold text-gray-900">Catalogo/Rivista</p>
+    <p className="font-semibold text-gray-900">Cataloghi/Riviste</p>
     <p className="text-sm text-gray-600">Cataloghi e riviste</p>
   </button>
   <button

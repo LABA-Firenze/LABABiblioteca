@@ -247,7 +247,7 @@ const Dashboard = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">
-                Catalogo
+                Libri
               </p>
               <p className="text-3xl font-bold text-gray-900">
                 {stats.inventory}
@@ -1090,7 +1090,7 @@ const Dashboard = ({ onNavigate }) => {
                   className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
                 >
                   <p className="font-semibold text-gray-900">Libro</p>
-                  <p className="text-sm text-gray-600 mt-1">Catalogo principale</p>
+                  <p className="text-sm text-gray-600 mt-1">Sezione libri</p>
                 </button>
                 <button
                   type="button"
@@ -1113,7 +1113,7 @@ const Dashboard = ({ onNavigate }) => {
                   }}
                   className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
                 >
-                  <p className="font-semibold text-gray-900">Catalogo</p>
+                  <p className="font-semibold text-gray-900">Cataloghi</p>
                   <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
                 </button>
                 <button
@@ -1243,7 +1243,7 @@ const Dashboard = ({ onNavigate }) => {
 // Stat Card Component
 function StatCard({ title, value, description }) {
   const iconMap = {
-    Catalogo: (
+    Libri: (
       <svg
         className="w-6 h-6"
         fill="none"
@@ -1291,7 +1291,7 @@ function StatCard({ title, value, description }) {
   };
 
   const colorMap = {
-    Catalogo: "bg-gradient-to-br from-teal-100 to-teal-200 ",
+    Libri: "bg-gradient-to-br from-teal-100 to-teal-200 ",
     Richieste: "bg-gradient-to-br from-amber-100 to-amber-200 ",
     Segnalazioni: "bg-gradient-to-br from-orange-100 to-orange-200 ",
   };
@@ -1300,7 +1300,7 @@ function StatCard({ title, value, description }) {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:scale-105 transition-transform p-6">
       <div className="flex items-center">
         <div
-          className={`w-12 h-12 ${colorMap[title]} rounded-lg flex items-center justify-center ${title === "Catalogo"
+          className={`w-12 h-12 ${colorMap[title]} rounded-lg flex items-center justify-center ${title === "Libri"
             ? "text-teal-600"
             : title === "Richieste"
               ? "text-amber-600"
