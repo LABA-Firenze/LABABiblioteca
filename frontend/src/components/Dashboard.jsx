@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../auth/AuthContext";
 import StepInventoryModal from "./StepInventoryModal";
+import ThesisInventoryModal from "./ThesisInventoryModal";
 import QuickRequestModal from "./QuickRequestModal";
 import { DashboardSkeleton } from "./SkeletonLoader";
 
@@ -1044,15 +1045,26 @@ const Dashboard = ({ onNavigate }) => {
       )}
 
       {/* Add Inventory Modal */}
-      <StepInventoryModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={() => {
-          fetchDashboardData();
-          setShowAddModal(false);
-        }}
-        catalogType={selectedCatalogType}
-      />
+      {selectedCatalogType === "tesi" ? (
+        <ThesisInventoryModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            fetchDashboardData();
+            setShowAddModal(false);
+          }}
+        />
+      ) : (
+        <StepInventoryModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            fetchDashboardData();
+            setShowAddModal(false);
+          }}
+          catalogType={selectedCatalogType}
+        />
+      )}
 
       {/* Catalog Type Picker Modal */}
       {showCatalogTypePicker && (

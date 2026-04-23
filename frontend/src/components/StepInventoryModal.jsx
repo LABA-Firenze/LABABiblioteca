@@ -49,6 +49,46 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
  
  const { token } = useAuth();
 
+const catalogLabels = {
+  libri: {
+    singular: 'Libro',
+    newTitle: 'Nuovo Libro',
+    editTitle: 'Modifica Libro',
+    baseInfoTitle: 'Informazioni base del libro',
+    titlePlaceholder: 'Titolo del libro',
+    authorLabel: 'Autore *',
+    authorPlaceholder: "Nome e cognome dell'autore"
+  },
+  tesi: {
+    singular: 'Tesi',
+    newTitle: 'Nuova Tesi',
+    editTitle: 'Modifica Tesi',
+    baseInfoTitle: 'Informazioni base della tesi',
+    titlePlaceholder: 'Titolo della tesi',
+    authorLabel: 'Alunno *',
+    authorPlaceholder: "Nome e cognome dell'alunno"
+  },
+  cataloghi: {
+    singular: 'Catalogo',
+    newTitle: 'Nuovo Catalogo',
+    editTitle: 'Modifica Catalogo',
+    baseInfoTitle: 'Informazioni base del catalogo',
+    titlePlaceholder: 'Titolo del catalogo',
+    authorLabel: 'Autore / Curatore *',
+    authorPlaceholder: 'Nome autore o curatore'
+  },
+  riviste: {
+    singular: 'Rivista',
+    newTitle: 'Nuova Rivista',
+    editTitle: 'Modifica Rivista',
+    baseInfoTitle: 'Informazioni base della rivista',
+    titlePlaceholder: 'Titolo della rivista',
+    authorLabel: 'Autore / Curatore *',
+    authorPlaceholder: 'Nome autore o curatore'
+  }
+};
+const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
+
  // Fetch data when modal opens
  useEffect(() => {
  if (isOpen) {
@@ -362,7 +402,7 @@ return (
       <div className="modal-header">
  <div>
  <h2 className="text-lg font-semibold text-primary">
- {editingItem ? 'Modifica Elemento' : 'Nuovo Elemento'}
+{editingItem ? currentCatalog.editTitle : currentCatalog.newTitle}
  </h2>
  <p className="text-xs text-secondary mt-1">
    {getStepTitle()} (Passo {step} di 5)
@@ -422,7 +462,7 @@ return (
  {step === 1 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-primary mb-4">
- Informazioni Base dell'Elemento
+{currentCatalog.baseInfoTitle}
  </h3>
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,7 +481,7 @@ return (
    }
  }}
  className="input-field"
- placeholder="Titolo del libro"
+placeholder={currentCatalog.titlePlaceholder}
  />
  </div>
 
@@ -469,13 +509,13 @@ return (
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Alunno *</label>
+                  <label className="form-label">{currentCatalog.authorLabel}</label>
                   <input
                     type="text"
                     value={formData.autore}
                     onChange={(e) => setFormData(prev => ({ ...prev, autore: e.target.value }))}
                     className="input-field"
-                    placeholder="Nome e cognome dell'alunno"
+                    placeholder={currentCatalog.authorPlaceholder}
                   />
                 </div>
 

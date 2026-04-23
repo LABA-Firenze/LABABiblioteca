@@ -10,7 +10,10 @@ import Login from "./auth/Login";
 
 import Dashboard from "./components/Dashboard.jsx";
 import UserDashboard from "./components/UserDashboard.jsx";
-import Inventory from "./components/Inventory.jsx";
+import BookInventory from "./components/BookInventory.jsx";
+import ThesisInventory from "./components/ThesisInventory.jsx";
+import CatalogInventory from "./components/CatalogInventory.jsx";
+import MagazineInventory from "./components/MagazineInventory.jsx";
 import Loans from "./components/Loans.jsx";
 import Repairs from "./components/Repairs.jsx";
 import Statistics from "./components/Statistics.jsx";
@@ -434,10 +437,10 @@ onClick={handleTabChange}
             <main className="flex-1 p-4 lg:p-6 main-content">
               <div className="max-w-7xl mx-auto">
                 {tab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
-                {tab === 'inventario' && <Inventory catalogType="libri" />}
-                {tab === 'tesi-laurea' && <Inventory catalogType="tesi" />}
-                {tab === 'cataloghi' && <Inventory catalogType="cataloghi" />}
-                {tab === 'riviste' && <Inventory catalogType="riviste" />}
+                {tab === 'inventario' && <BookInventory />}
+                {tab === 'tesi-laurea' && <ThesisInventory />}
+                {tab === 'cataloghi' && <CatalogInventory />}
+                {tab === 'riviste' && <MagazineInventory />}
                 {tab === 'prestiti' && <Loans 
                   selectedRequestFromNotification={selectedRequestFromNotification} 
                   onRequestHandled={() => setSelectedRequestFromNotification(null)}

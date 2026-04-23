@@ -7,6 +7,7 @@ import {
  importInventoryFromExcel 
 } from '../utils/excelUtils';
 import StepInventoryModal from './StepInventoryModal';
+import ThesisInventoryModal from './ThesisInventoryModal';
 import QRCodeGenerator from './QRCodeGenerator';
 import { TableSkeleton } from './SkeletonLoader';
 import AdvancedFilters from './AdvancedFilters';
@@ -88,7 +89,7 @@ const Inventory = ({ catalogType = 'libri' }) => {
     libri: {
       title: 'Libri',
       subtitle: 'Gestisci e monitora tutti i libri della biblioteca',
-      newItemLabel: 'Nuovo Articolo'
+      newItemLabel: 'Nuovo Libro'
     },
     tesi: {
       title: 'Tesi di laurea',
@@ -230,10 +231,20 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
  };
 
  useEffect(() => {
- fetchInventory();
- fetchCategories();
- fetchCourses();
-  }, []);
+  setInventory([]);
+  setLoans([]);
+  setItemUnits({});
+  setExpandedItems(new Set());
+  setSearchTerm('');
+  setSelectedCategoryFilter('');
+  setSelectedLocationFilter('');
+  setEditingItem(null);
+  setShowAddModal(false);
+  setQrCodeItem(null);
+  fetchInventory();
+  fetchCategories();
+  fetchCourses();
+  }, [catalogType, token]);
 
   // Ogni elemento inventario è una card (nomi duplicati ammessi, identificazione tramite ID univoco)
   const groupedInventory = inventory.map(item => ({
@@ -958,6 +969,9 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                   {/* Dati pubblicazione */}
                   {(item.luogo_pubblicazione || item.data_pubblicazione || item.casa_editrice || item.relatore || item.anno_accademico || item.fondo || item.settore || item.location) && (
                     <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                      {item.autore && (
+                        <p className="text-sm text-gray-600"><span className="font-medium">Autore:</span> {item.autore}</p>
+                      )}
                       {item.location && (
                         <p className="text-sm text-gray-600"><span className="font-medium">Posizione:</span> {item.location}</p>
                       )}
@@ -1289,22 +1303,38 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
  )}
 
         {/* Step Inventory Modal */}
-        <StepInventoryModal
-          isOpen={showAddModal || !!editingItem}
-          onClose={() => {
-            setShowAddModal(false);
-            setEditingItem(null);
-          }}
-          onSuccess={() => {
-            fetchInventory();
-            setShowAddModal(false);
-            setEditingItem(null);
-          }}
-          editingItem={editingItem}
-          categories={categories}
-          courses={courses}
-          catalogType={catalogType}
-        />
+        {catalogType === 'tesi' ? (
+          <ThesisInventoryModal
+            isOpen={showAddModal || !!editingItem}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={() => {
+              fetchInventory();
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            editingItem={editingItem}
+          />
+        ) : (
+          <StepInventoryModal
+            isOpen={showAddModal || !!editingItem}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={() => {
+              fetchInventory();
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            editingItem={editingItem}
+            categories={categories}
+            courses={courses}
+            catalogType={catalogType}
+          />
+        )}
 
         {/* Unit Loan Details Modal */}
         {showUnitDetailModal && selectedUnit && unitLoanDetails && (
