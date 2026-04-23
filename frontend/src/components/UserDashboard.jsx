@@ -65,7 +65,7 @@ const UserDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const catalogTypes = ['libri', 'tesi', 'cataloghi'];
+      const catalogTypes = ['libri', 'riviste'];
       const buildCatalogUrl = (baseUrl, type) => `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}tipo_catalogo=${type}`;
       const inventoryPromises = catalogTypes.map((type) =>
         fetch(buildCatalogUrl(`${import.meta.env.VITE_API_BASE_URL}/api/inventario/disponibili`, type), {
@@ -216,7 +216,7 @@ const UserDashboard = () => {
                     <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-sm mr-2">1</div>
                     <h4 className="font-semibold text-gray-900">Sfoglia</h4>
                   </div>
-                  <p className="text-xs text-gray-600">Vai su "Articoli Disponibili" per vedere libri, cataloghi, riviste, tesi e progetti disponibili per il tuo corso.</p>
+                  <p className="text-xs text-gray-600">Vai su "Articoli Disponibili" per vedere libri e riviste disponibili per il tuo corso.</p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-teal-100">
                   <div className="flex items-center mb-2">
@@ -493,7 +493,7 @@ const UserDashboard = () => {
                 </svg>
               </button>
             </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => {
@@ -505,30 +505,6 @@ const UserDashboard = () => {
               >
                 <p className="font-semibold text-gray-900">Libro</p>
                 <p className="text-sm text-gray-600 mt-1">Sezione libri</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCatalogType('tesi');
-                  setShowCatalogTypePicker(false);
-                  setShowQuickRequestModal(true);
-                }}
-                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
-              >
-                <p className="font-semibold text-gray-900">Tesi</p>
-                <p className="text-sm text-gray-600 mt-1">Sezione tesi di laurea</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCatalogType('cataloghi');
-                  setShowCatalogTypePicker(false);
-                  setShowQuickRequestModal(true);
-                }}
-                className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
-              >
-                <p className="font-semibold text-gray-900">Cataloghi</p>
-                <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
               </button>
               <button
                 type="button"

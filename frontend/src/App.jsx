@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, BookOpen, GraduationCap, NotebookText, Newspaper, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, Newspaper, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
 import AuthProvider, { useAuth } from "./auth/AuthContext";
 import { NotificationProvider } from "./components/NotificationSystem.jsx";
 import DesktopNotificationManager from "./components/DesktopNotificationManager.jsx";
@@ -11,8 +11,6 @@ import Login from "./auth/Login";
 import Dashboard from "./components/Dashboard.jsx";
 import UserDashboard from "./components/UserDashboard.jsx";
 import BookInventory from "./components/BookInventory.jsx";
-import ThesisInventory from "./components/ThesisInventory.jsx";
-import CatalogInventory from "./components/CatalogInventory.jsx";
 import MagazineInventory from "./components/MagazineInventory.jsx";
 import Loans from "./components/Loans.jsx";
 import Repairs from "./components/Repairs.jsx";
@@ -27,6 +25,7 @@ import MobileMenu from "./components/MobileMenu.jsx";
 
 // App principale con design moderno
 function AppInner() {
+  const BLOCKED_SECTIONS = new Set(['tesi-laurea', 'cataloghi']);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,8 +36,6 @@ function AppInner() {
   const adminSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className={iconClass} /> },
     { id: 'inventario', label: 'Libri', icon: <BookOpen className={iconClass} /> },
-    { id: 'tesi-laurea', label: 'Tesi di laurea', icon: <GraduationCap className={iconClass} /> },
-    { id: 'cataloghi', label: 'Cataloghi', icon: <NotebookText className={iconClass} /> },
     { id: 'riviste', label: 'Riviste', icon: <Newspaper className={iconClass} /> },
     { id: 'prestiti', label: 'Prestiti', icon: <ArrowLeftRight className={iconClass} /> },
     { id: 'riparazioni', label: 'Segnalazioni', icon: <AlertTriangle className={iconClass} /> },
@@ -213,8 +210,7 @@ function AppInner() {
     const path = window.location.pathname;
     if (path === '/' || path === '/dashboard') return 'dashboard';
     if (path === '/inventario') return 'inventario';
-    if (path === '/tesi-laurea') return 'tesi-laurea';
-    if (path === '/cataloghi') return 'cataloghi';
+    if (path === '/tesi-laurea' || path === '/cataloghi') return 'dashboard';
     if (path === '/riviste') return 'riviste';
     if (path === '/prestiti') return 'prestiti';
     if (path === '/riparazioni') return 'riparazioni';
@@ -230,8 +226,9 @@ function AppInner() {
 
   // Funzione per cambiare tab e aggiornare URL
   const handleTabChange = (newTab, options = {}) => {
-    setTab(newTab);
-    const path = newTab === 'dashboard' ? '/' : `/${newTab}`;
+    const targetTab = BLOCKED_SECTIONS.has(newTab) ? 'dashboard' : newTab;
+    setTab(targetTab);
+    const path = targetTab === 'dashboard' ? '/' : `/${targetTab}`;
     window.history.pushState({}, '', path);
     
     // Se ci sono opzioni per il tab prestiti, salva il tab iniziale
@@ -286,8 +283,6 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="w-5 h-5" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<GraduationCap className="w-5 h-5" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<NotebookText className="w-5 h-5" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="w-5 h-5" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="w-5 h-5" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="w-5 h-5" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
@@ -328,8 +323,6 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="icon" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="icon" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<GraduationCap className="icon" />} label="Tesi di laurea" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<NotebookText className="icon" />} label="Cataloghi" tab="cataloghi" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="icon" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="icon" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="icon" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
@@ -438,8 +431,6 @@ onClick={handleTabChange}
               <div className="max-w-7xl mx-auto">
                 {tab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
                 {tab === 'inventario' && <BookInventory />}
-                {tab === 'tesi-laurea' && <ThesisInventory />}
-                {tab === 'cataloghi' && <CatalogInventory />}
                 {tab === 'riviste' && <MagazineInventory />}
                 {tab === 'prestiti' && <Loans 
                   selectedRequestFromNotification={selectedRequestFromNotification} 

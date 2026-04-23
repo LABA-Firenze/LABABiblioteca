@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../auth/AuthContext";
 import StepInventoryModal from "./StepInventoryModal";
-import ThesisInventoryModal from "./ThesisInventoryModal";
 import QuickRequestModal from "./QuickRequestModal";
 import { DashboardSkeleton } from "./SkeletonLoader";
 
@@ -93,7 +92,7 @@ const Dashboard = ({ onNavigate }) => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const catalogTypes = ["libri", "tesi", "cataloghi"];
+      const catalogTypes = ["libri", "riviste"];
       const buildCatalogUrl = (baseUrl, type) => `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}tipo_catalogo=${type}`;
 
       const inventoryPromises = catalogTypes.map((type) =>
@@ -579,7 +578,7 @@ const Dashboard = ({ onNavigate }) => {
                 </h3>
               </div>
               <p className="text-gray-600">
-                Scegli se aggiungere un libro, una tesi o un catalogo
+                Scegli se aggiungere un libro o una rivista
               </p>
             </div>
 
@@ -1045,26 +1044,15 @@ const Dashboard = ({ onNavigate }) => {
       )}
 
       {/* Add Inventory Modal */}
-      {selectedCatalogType === "tesi" ? (
-        <ThesisInventoryModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
-            fetchDashboardData();
-            setShowAddModal(false);
-          }}
-        />
-      ) : (
-        <StepInventoryModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
-            fetchDashboardData();
-            setShowAddModal(false);
-          }}
-          catalogType={selectedCatalogType}
-        />
-      )}
+      <StepInventoryModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          fetchDashboardData();
+          setShowAddModal(false);
+        }}
+        catalogType={selectedCatalogType}
+      />
 
       {/* Catalog Type Picker Modal */}
       {showCatalogTypePicker && (
@@ -1091,7 +1079,7 @@ const Dashboard = ({ onNavigate }) => {
             </div>
 
             <div className="modal-body">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1103,30 +1091,6 @@ const Dashboard = ({ onNavigate }) => {
                 >
                   <p className="font-semibold text-gray-900">Libro</p>
                   <p className="text-sm text-gray-600 mt-1">Sezione libri</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCatalogType("tesi");
-                    setShowCatalogTypePicker(false);
-                    setShowAddModal(true);
-                  }}
-                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
-                >
-                  <p className="font-semibold text-gray-900">Tesi</p>
-                  <p className="text-sm text-gray-600 mt-1">Sezione tesi di laurea</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCatalogType("cataloghi");
-                    setShowCatalogTypePicker(false);
-                    setShowAddModal(true);
-                  }}
-                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-all text-left"
-                >
-                  <p className="font-semibold text-gray-900">Cataloghi</p>
-                  <p className="text-sm text-gray-600 mt-1">Sezione cataloghi/riviste</p>
                 </button>
                 <button
                   type="button"
