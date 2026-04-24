@@ -66,6 +66,9 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
       'Corso Accademico': item.categoria_madre || '',
       'Categoria': item.categoria_nome || '',
       'Autore': item.autore || '',
+      'Numero': item.numero_rivista || '',
+      'Data Rivista': item.data_rivista || '',
+      'Periodicità': item.periodicita || '',
       'Relatore': item.relatore || '',
       'Anno Accademico': item.anno_accademico || '',
       'Luogo': item.luogo_pubblicazione || '',
@@ -93,6 +96,9 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
       { wch: 20 },  // Corso Accademico
       { wch: 20 },  // Categoria
       { wch: 20 },  // Autore
+      { wch: 15 },  // Numero
+      { wch: 15 },  // Data Rivista
+      { wch: 15 },  // Periodicità
       { wch: 20 },  // Relatore
       { wch: 15 },  // Anno Accademico
       { wch: 15 },  // Luogo
@@ -194,6 +200,9 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
           quantita_totale: parseInt(row['Quantità Totale']) || 1,
           categoria_madre: row['Corso Accademico']?.toString().trim() || null,
           autore: row.Autore?.toString().trim() || null,
+          numero_rivista: row.Numero?.toString().trim() || null,
+          data_rivista: row['Data Rivista']?.toString().trim() || null,
+          periodicita: row['Periodicità']?.toString().trim() || null,
           relatore: row.Relatore?.toString().trim() || null,
           anno_accademico: row['Anno Accademico']?.toString().trim() || null,
           luogo_pubblicazione: row.Luogo?.toString().trim() || null,
@@ -241,13 +250,13 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
           await query(`
             UPDATE inventario 
             SET quantita_totale = $2, categoria_madre = $3, categoria_id = $4, 
-                autore = $5, relatore = $6, anno_accademico = $7, luogo_pubblicazione = $8, data_pubblicazione = $9,
-                casa_editrice = $10, fondo = $11, posizione = $12, in_manutenzione = $13, tipo_prestito = $14, updated_at = CURRENT_TIMESTAMP
+                autore = $5, numero_rivista = $6, data_rivista = $7, periodicita = $8, relatore = $9, anno_accademico = $10, luogo_pubblicazione = $11, data_pubblicazione = $12,
+                casa_editrice = $13, fondo = $14, posizione = $15, in_manutenzione = $16, tipo_prestito = $17, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
-              AND COALESCE(tipo_catalogo, 'libri') = $15
+              AND COALESCE(tipo_catalogo, 'libri') = $18
           `, [
             inventarioId, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
-            itemData.autore, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
+            itemData.autore, itemData.numero_rivista, itemData.data_rivista, itemData.periodicita, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
             itemData.casa_editrice, itemData.fondo, itemData.posizione,
             itemData.in_manutenzione, itemData.tipo_prestito, tipoCatalogo
           ]);
@@ -255,12 +264,12 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
           // Inserisci nuovo elemento
           const newItem = await query(`
             INSERT INTO inventario (nome, quantita_totale, categoria_madre, categoria_id, 
-                                   autore, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, posizione, in_manutenzione, tipo_prestito, tipo_catalogo)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                                   autore, numero_rivista, data_rivista, periodicita, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, posizione, in_manutenzione, tipo_prestito, tipo_catalogo)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
             RETURNING id
           `, [
             itemData.nome, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
-            itemData.autore, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
+            itemData.autore, itemData.numero_rivista, itemData.data_rivista, itemData.periodicita, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
             itemData.casa_editrice, itemData.fondo, itemData.posizione, itemData.in_manutenzione, itemData.tipo_prestito, tipoCatalogo
           ]);
           inventarioId = newItem[0].id;
@@ -340,6 +349,9 @@ r.get('/inventario/template', requireAuth, requireRole('admin'), async (req, res
             'Corso Accademico': 'Cinema e Audiovisivi',
             'Categoria': 'Libri',
             'Autore': 'Mario Rossi',
+            'Numero': tipoCatalogo === 'riviste' ? 'N. 3' : '',
+            'Data Rivista': tipoCatalogo === 'riviste' ? 'Autunno 2007' : '',
+            'Periodicità': tipoCatalogo === 'riviste' ? 'Mensile' : '',
             'Relatore': tipoCatalogo === 'tesi' ? 'Prof. Verdi' : '',
             'Anno Accademico': tipoCatalogo === 'tesi' ? '2024/2025' : '',
             'Luogo': 'Firenze',
@@ -366,6 +378,9 @@ r.get('/inventario/template', requireAuth, requireRole('admin'), async (req, res
       { wch: 20 },  // Corso Accademico
       { wch: 20 },  // Categoria
       { wch: 20 },  // Autore
+      { wch: 15 },  // Numero
+      { wch: 15 },  // Data Rivista
+      { wch: 15 },  // Periodicità
       { wch: 20 },  // Relatore
       { wch: 15 },  // Anno Accademico
       { wch: 15 },  // Luogo

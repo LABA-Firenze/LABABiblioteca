@@ -119,6 +119,9 @@ export async function initDatabase() {
         luogo_pubblicazione VARCHAR(255),
         data_pubblicazione INTEGER,
         casa_editrice VARCHAR(255),
+        numero_rivista VARCHAR(255),
+        data_rivista VARCHAR(255),
+        periodicita VARCHAR(100),
         fondo VARCHAR(255),
         settore VARCHAR(255),
         in_manutenzione BOOLEAN NOT NULL DEFAULT FALSE,
@@ -237,6 +240,9 @@ export async function initDatabase() {
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS luogo_pubblicazione VARCHAR(255);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS data_pubblicazione INTEGER;
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS casa_editrice VARCHAR(255);
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS numero_rivista VARCHAR(255);
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS data_rivista VARCHAR(255);
+      ALTER TABLE inventario ADD COLUMN IF NOT EXISTS periodicita VARCHAR(100);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS fondo VARCHAR(255);
       ALTER TABLE inventario ADD COLUMN IF NOT EXISTS settore VARCHAR(255);
       -- Migra dati esistenti: fornitore -> autore (se fornitore esiste e autore no)

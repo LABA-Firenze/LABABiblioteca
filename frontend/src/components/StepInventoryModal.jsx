@@ -43,6 +43,9 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
     luogo_pubblicazione: '',
     data_pubblicazione: '',
     casa_editrice: '',
+    numero_rivista: '',
+    data_rivista: '',
+    periodicita: '',
     fondo: '',
     categoria_id: '',
     tipo_prestito: 'solo_esterno',
@@ -114,6 +117,9 @@ const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
           luogo_pubblicazione: editingItem.luogo_pubblicazione || '',
           data_pubblicazione: editingItem.data_pubblicazione || '',
           casa_editrice: editingItem.casa_editrice || '',
+          numero_rivista: editingItem.numero_rivista || '',
+          data_rivista: editingItem.data_rivista || '',
+          periodicita: editingItem.periodicita || '',
           fondo: editingItem.fondo || '',
           categoria_id: editingItem.categoria_id || '',
           tipo_prestito: editingItem.tipo_prestito || 'solo_esterno',
@@ -136,6 +142,9 @@ const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
         luogo_pubblicazione: '',
         data_pubblicazione: '',
         casa_editrice: '',
+        numero_rivista: '',
+        data_rivista: '',
+        periodicita: '',
         fondo: '',
         categoria_id: '',
         tipo_prestito: 'solo_esterno',
@@ -289,7 +298,7 @@ const handleSubmit = async () => {
     setError('Compila tutti i campi obbligatori');
     return;
   }
-  if (!String(formData.autore || '').trim()) {
+  if (catalogType !== 'riviste' && !String(formData.autore || '').trim()) {
     setError(catalogType === 'tesi' ? "L'alunno è obbligatorio" : "L'autore è obbligatorio");
     return;
   }
@@ -332,9 +341,14 @@ const handleSubmit = async () => {
     relatore: catalogType === 'tesi' ? (formData.relatore || null) : null,
     anno_accademico: catalogType === 'tesi' ? (formData.anno_accademico || null) : null,
     luogo_pubblicazione: formData.luogo_pubblicazione || null,
-    data_pubblicazione: catalogType === 'tesi' ? null : (formData.data_pubblicazione ? parseInt(formData.data_pubblicazione, 10) : null),
+    data_pubblicazione: catalogType === 'riviste'
+      ? null
+      : (catalogType === 'tesi' ? null : (formData.data_pubblicazione ? parseInt(formData.data_pubblicazione, 10) : null)),
     casa_editrice: catalogType === 'tesi' ? null : (formData.casa_editrice || null),
-    fondo: catalogType === 'tesi' ? null : (formData.fondo || null),
+    numero_rivista: catalogType === 'riviste' ? (formData.numero_rivista || null) : null,
+    data_rivista: catalogType === 'riviste' ? (formData.data_rivista || null) : null,
+    periodicita: catalogType === 'riviste' ? (formData.periodicita || null) : null,
+    fondo: catalogType === 'libri' ? (formData.fondo || null) : null,
     settore: null,
     location: formData.location || null,
     corsi_assegnati: isTesi ? [corsoSel] : [],
@@ -380,7 +394,10 @@ const getStepTitle = () => {
     case 1: return 'Informazioni Base';
     case 2: return step2Title;
     case 3: return 'Tipo di Utilizzo';
-    case 4: return catalogType === 'tesi' ? 'Corso accademico (tesi)' : 'Fondo e Settore';
+    case 4:
+      if (catalogType === 'tesi') return 'Corso accademico (tesi)';
+      if (catalogType === 'libri') return 'Fondo e Settore';
+      return 'Disponibilità corsi';
     case 5: return 'Codici Univoci';
     default: return 'Nuovo Elemento';
   }
@@ -392,13 +409,21 @@ const canProceed = () => {
       formData.nome?.trim()
       && formData.quantita_totale
       && formData.quantita_totale > 0
-      && String(formData.autore || '').trim()
+      && (catalogType === 'riviste' ? true : String(formData.autore || '').trim())
     );
     case 2: {
       if (catalogType === 'tesi') {
         return Boolean(
           String(formData.relatore || '').trim()
           && String(formData.anno_accademico || '').trim()
+        );
+      }
+      if (catalogType === 'riviste') {
+        return Boolean(
+          String(formData.numero_rivista || '').trim()
+          && String(formData.data_rivista || '').trim()
+          && String(formData.casa_editrice || '').trim()
+          && String(formData.periodicita || '').trim()
         );
       }
       return true;
@@ -451,7 +476,7 @@ return (
    { num: 1, label: 'Info Base', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
    { num: 2, label: 'Descrizione', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
    { num: 3, label: 'Tipo Utilizzo', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> },
-  { num: 4, label: catalogType === 'tesi' ? 'Corso tesi' : 'Fondo/Settore', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+  { num: 4, label: catalogType === 'tesi' ? 'Corso tesi' : (catalogType === 'libri' ? 'Fondo/Settore' : 'Tutti i corsi'), icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
    { num: 5, label: 'Codici Unità', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg> }
  ].map((stepData, index) => (
  <React.Fragment key={stepData.num}>
@@ -533,27 +558,29 @@ placeholder={currentCatalog.titlePlaceholder}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">{currentCatalog.authorLabel}</label>
-                  <input
-                    type="text"
-                    value={formData.autore}
-                    onChange={(e) => setFormData(prev => ({ ...prev, autore: e.target.value }))}
-                    className="input-field"
-                    placeholder={currentCatalog.authorPlaceholder}
-                  />
-                </div>
+                {catalogType !== 'riviste' && (
+                  <div className="form-group">
+                    <label className="form-label">{currentCatalog.authorLabel}</label>
+                    <input
+                      type="text"
+                      value={formData.autore}
+                      onChange={(e) => setFormData(prev => ({ ...prev, autore: e.target.value }))}
+                      className="input-field"
+                      placeholder={currentCatalog.authorPlaceholder}
+                    />
+                  </div>
+                )}
 
 
  </div>
  </div>
  )}
 
- {/* Step 2: tesi = relatore, anno, luogo; altri tipi = dati pubblicazione */}
+ {/* Step 2: tesi/riviste con campi dedicati; altri tipi = dati pubblicazione */}
  {step === 2 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-primary mb-4">
-  {catalogType === 'tesi' ? 'Dati tesi' : 'Dati pubblicazione'}
+  {catalogType === 'tesi' ? 'Dati tesi' : (catalogType === 'riviste' ? 'Dati rivista' : 'Dati pubblicazione')}
  </h3>
  
  <div className="space-y-4">
@@ -590,6 +617,59 @@ placeholder={currentCatalog.titlePlaceholder}
           onChange={(e) => setFormData(prev => ({ ...prev, luogo_pubblicazione: e.target.value }))}
           className="input-field"
           placeholder="Es. Firenze, sede di discussione"
+        />
+      </div>
+    </>
+  ) : catalogType === 'riviste' ? (
+    <>
+      <div className="form-group">
+        <label className="form-label">Numero *</label>
+        <input
+          type="text"
+          value={formData.numero_rivista}
+          onChange={(e) => setFormData(prev => ({ ...prev, numero_rivista: e.target.value }))}
+          className="input-field"
+          placeholder="Es. 12, N. 4, Vol. 3 N. 2"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Data *</label>
+        <input
+          type="text"
+          value={formData.data_rivista}
+          onChange={(e) => setFormData(prev => ({ ...prev, data_rivista: e.target.value }))}
+          className="input-field"
+          placeholder="Es. Autunno 2007"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Editore *</label>
+        <input
+          type="text"
+          value={formData.casa_editrice}
+          onChange={(e) => setFormData(prev => ({ ...prev, casa_editrice: e.target.value }))}
+          className="input-field"
+          placeholder="Nome editore"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Luogo</label>
+        <input
+          type="text"
+          value={formData.luogo_pubblicazione}
+          onChange={(e) => setFormData(prev => ({ ...prev, luogo_pubblicazione: e.target.value }))}
+          className="input-field"
+          placeholder="Es. Firenze"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Periodicità *</label>
+        <input
+          type="text"
+          value={formData.periodicita}
+          onChange={(e) => setFormData(prev => ({ ...prev, periodicita: e.target.value }))}
+          className="input-field"
+          placeholder="Mensile, Trimestrale, Annuale..."
         />
       </div>
     </>
@@ -719,11 +799,11 @@ Tipo di Utilizzo
 </div>
 )}
 
-{/* Step 4: tesi = un solo corso; altri tipi = fondo e settore */}
+{/* Step 4: tesi = un solo corso; libri = fondo/settore; altri tipi = tutti i corsi */}
 {step === 4 && (
  <div className="space-y-6">
  <h3 className="text-lg font-semibold text-primary mb-4">
-  {catalogType === 'tesi' ? 'Corso accademico della tesi' : 'Fondo e Settore'}
+  {catalogType === 'tesi' ? 'Corso accademico della tesi' : (catalogType === 'libri' ? 'Fondo e Settore' : 'Disponibilità per corso')}
  </h3>
 
         {catalogType === 'tesi' ? (
@@ -746,7 +826,7 @@ Tipo di Utilizzo
               La tesi è associata <strong>solo</strong> al corso che scegli qui (non a tutti i corsi).
             </p>
           </div>
-        ) : (
+        ) : catalogType === 'libri' ? (
           <div className="space-y-6">
             <div className="rounded-xl border border-teal-200 bg-teal-50 p-5 text-sm text-teal-900">
               <p className="font-medium text-teal-950 mb-2">Disponibilità corsi</p>
@@ -782,6 +862,13 @@ Tipo di Utilizzo
               </select>
             </div>
           </div>
+        ) : (
+          <div className="rounded-xl border border-teal-200 bg-teal-50 p-5 text-sm text-teal-900">
+            <p className="font-medium text-teal-950 mb-2">{currentCatalog.singular}: disponibilità corsi</p>
+            <p>
+              Questo materiale viene reso disponibile <strong>automaticamente a tutti i corsi</strong> accademici presenti in anagrafica.
+            </p>
+          </div>
         )}
 
  </div>
@@ -806,7 +893,7 @@ Tipo di Utilizzo
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Titolo:</strong> {formData.nome}</div>
                   <div><strong>Quantità:</strong> {formData.quantita_totale}</div>
-                  <div><strong>{catalogType === 'tesi' ? 'Alunno' : 'Autore'}:</strong> {formData.autore || '—'}</div>
+                  <div><strong>{catalogType === 'tesi' ? 'Alunno' : (catalogType === 'riviste' ? 'Numero' : 'Autore')}:</strong> {catalogType === 'riviste' ? (formData.numero_rivista || '—') : (formData.autore || '—')}</div>
                   <div><strong>Scaffale:</strong> {formData.scaffale || '—'}</div>
                   <div className="col-span-2">
                     <strong>{catalogType === 'tesi' ? 'Corso accademico (tesi)' : 'Corsi'}:</strong>{' '}
@@ -821,10 +908,24 @@ Tipo di Utilizzo
                   ) : (
                     <>
                       <div><strong>Luogo:</strong> {formData.luogo_pubblicazione || '—'}</div>
-                      <div><strong>Anno:</strong> {formData.data_pubblicazione || '—'}</div>
-                      <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || '—'}</div>
-                      <div><strong>Fondo:</strong> {formData.fondo || '—'}</div>
-                      <div><strong>Settore:</strong> {categories.find((c) => String(c.id) === String(formData.categoria_id))?.nome || '—'}</div>
+                      {catalogType === 'riviste' ? (
+                        <>
+                          <div><strong>Data:</strong> {formData.data_rivista || '—'}</div>
+                          <div className="col-span-2"><strong>Editore:</strong> {formData.casa_editrice || '—'}</div>
+                          <div className="col-span-2"><strong>Periodicità:</strong> {formData.periodicita || '—'}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div><strong>Anno:</strong> {formData.data_pubblicazione || '—'}</div>
+                          <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || '—'}</div>
+                        </>
+                      )}
+                      {catalogType === 'libri' && (
+                        <>
+                          <div><strong>Fondo:</strong> {formData.fondo || '—'}</div>
+                          <div><strong>Settore:</strong> {categories.find((c) => String(c.id) === String(formData.categoria_id))?.nome || '—'}</div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
