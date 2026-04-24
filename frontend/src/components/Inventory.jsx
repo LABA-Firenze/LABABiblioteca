@@ -6,8 +6,10 @@ import {
  generateInventoryTemplate, 
  importInventoryFromExcel 
 } from '../utils/excelUtils';
-import StepInventoryModal from './StepInventoryModal';
 import ThesisInventoryModal from './ThesisInventoryModal';
+import BookInventoryModal from './BookInventoryModal';
+import CatalogInventoryModal from './CatalogInventoryModal';
+import MagazineInventoryModal from './MagazineInventoryModal';
 import QRCodeGenerator from './QRCodeGenerator';
 import { TableSkeleton } from './SkeletonLoader';
 import AdvancedFilters from './AdvancedFilters';
@@ -1302,8 +1304,8 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
  />
  )}
 
-        {/* Step Inventory Modal */}
-        {catalogType === 'tesi' ? (
+        {/* Modali separati per ogni catalogo */}
+        {catalogType === 'tesi' && (
           <ThesisInventoryModal
             isOpen={showAddModal || !!editingItem}
             onClose={() => {
@@ -1317,8 +1319,9 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
             }}
             editingItem={editingItem}
           />
-        ) : (
-          <StepInventoryModal
+        )}
+        {catalogType === 'libri' && (
+          <BookInventoryModal
             isOpen={showAddModal || !!editingItem}
             onClose={() => {
               setShowAddModal(false);
@@ -1332,7 +1335,40 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
             editingItem={editingItem}
             categories={categories}
             courses={courses}
-            catalogType={catalogType}
+          />
+        )}
+        {catalogType === 'cataloghi' && (
+          <CatalogInventoryModal
+            isOpen={showAddModal || !!editingItem}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={() => {
+              fetchInventory();
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            editingItem={editingItem}
+            categories={categories}
+            courses={courses}
+          />
+        )}
+        {catalogType === 'riviste' && (
+          <MagazineInventoryModal
+            isOpen={showAddModal || !!editingItem}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={() => {
+              fetchInventory();
+              setShowAddModal(false);
+              setEditingItem(null);
+            }}
+            editingItem={editingItem}
+            categories={categories}
+            courses={courses}
           />
         )}
 

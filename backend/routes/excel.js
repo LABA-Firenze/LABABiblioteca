@@ -12,6 +12,18 @@ const resolveCatalogType = (req) => {
   const rawType = String(req.query?.tipo_catalogo || req.body?.tipo_catalogo || 'libri').toLowerCase().trim();
   return ALLOWED_CATALOG_TYPES.has(rawType) ? rawType : null;
 };
+const getCatalogLabel = (tipoCatalogo) => {
+  switch (tipoCatalogo) {
+    case 'tesi':
+      return 'tesi';
+    case 'cataloghi':
+      return 'cataloghi';
+    case 'riviste':
+      return 'riviste';
+    default:
+      return 'libri';
+  }
+};
 
 // Configurazione multer per upload file - solo memoria per Railway
 const upload = multer({ 
@@ -53,11 +65,16 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
       'Quantità Totale': item.quantita_totale || 0,
       'Corso Accademico': item.categoria_madre || '',
       'Categoria': item.categoria_nome || '',
+      'Autore': item.autore || '',
+      'Relatore': item.relatore || '',
+      'Anno Accademico': item.anno_accademico || '',
+      'Luogo': item.luogo_pubblicazione || '',
+      'Data Pubblicazione': item.data_pubblicazione || '',
+      'Casa Editrice': item.casa_editrice || '',
+      'Fondo': item.fondo || '',
       'Posizione': item.posizione || '',
-      'Note': item.note || '',
-      'Immagine URL': item.immagine_url || '',
       'In Manutenzione': item.in_manutenzione ? 'Sì' : 'No',
-      'Soglia Minima': item.soglia_minima || 1,
+      'Tipo Prestito': item.tipo_prestito || 'solo_esterno',
       'Unità Disponibili': item.unita_disponibili || 0,
       'Corsi Assegnati': item.corsi_assegnati || '',
       'Data Creazione': new Date(item.created_at).toLocaleDateString('it-IT'),
@@ -75,11 +92,16 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
       { wch: 12 },  // Quantità Totale
       { wch: 20 },  // Corso Accademico
       { wch: 20 },  // Categoria
+      { wch: 20 },  // Autore
+      { wch: 20 },  // Relatore
+      { wch: 15 },  // Anno Accademico
+      { wch: 15 },  // Luogo
+      { wch: 15 },  // Data Pubblicazione
+      { wch: 20 },  // Casa Editrice
+      { wch: 15 },  // Fondo
       { wch: 15 },  // Posizione
-      { wch: 40 },  // Note
-      { wch: 30 },  // Immagine URL
       { wch: 12 },  // In Manutenzione
-      { wch: 12 },  // Soglia Minima
+      { wch: 15 },  // Tipo Prestito
       { wch: 12 },  // Unità Disponibili
       { wch: 30 },  // Corsi Assegnati
       { wch: 15 },  // Data Creazione
@@ -87,14 +109,15 @@ r.get('/inventario/export', requireAuth, requireRole('admin'), async (req, res) 
     ];
     ws['!cols'] = colWidths;
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+    const catalogLabel = getCatalogLabel(tipoCatalogo);
+    XLSX.utils.book_append_sheet(wb, ws, `Inventario ${catalogLabel}`);
     
     // Genera buffer Excel
     const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
     // Imposta headers per download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="inventario_laba.xlsx"');
+    res.setHeader('Content-Disposition', `attachment; filename="inventario_${catalogLabel}.xlsx"`);
     res.setHeader('Content-Length', excelBuffer.length);
     
     res.send(excelBuffer);
@@ -170,15 +193,18 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
           nome: row.Nome.toString().trim(),
           quantita_totale: parseInt(row['Quantità Totale']) || 1,
           categoria_madre: row['Corso Accademico']?.toString().trim() || null,
+          autore: row.Autore?.toString().trim() || null,
+          relatore: row.Relatore?.toString().trim() || null,
+          anno_accademico: row['Anno Accademico']?.toString().trim() || null,
+          luogo_pubblicazione: row.Luogo?.toString().trim() || null,
+          data_pubblicazione: row['Data Pubblicazione'] ? parseInt(row['Data Pubblicazione'], 10) || null : null,
+          casa_editrice: row['Casa Editrice']?.toString().trim() || null,
+          fondo: row.Fondo?.toString().trim() || null,
           posizione: row.Posizione?.toString().trim() || null,
-          note: row.Note?.toString().trim() || null,
-          immagine_url: row['Immagine URL']?.toString().trim() || null,
           in_manutenzione: row['In Manutenzione']?.toString().toLowerCase() === 'sì' || 
                           row['In Manutenzione']?.toString().toLowerCase() === 'si' || 
                           row['In Manutenzione']?.toString().toLowerCase() === 'yes' || 
                           row['In Manutenzione'] === 1,
-          soglia_minima: parseInt(row['Soglia Minima']) || 1,
-          fornitore: row.Fornitore?.toString().trim() || null,
           tipo_prestito: row['Tipo Prestito']?.toString().trim() || 'solo_esterno'
         };
 
@@ -215,26 +241,27 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
           await query(`
             UPDATE inventario 
             SET quantita_totale = $2, categoria_madre = $3, categoria_id = $4, 
-                posizione = $5, note = $6, immagine_url = $7, 
-                in_manutenzione = $8, soglia_minima = $9, fornitore = $10, tipo_prestito = $11, updated_at = CURRENT_TIMESTAMP
+                autore = $5, relatore = $6, anno_accademico = $7, luogo_pubblicazione = $8, data_pubblicazione = $9,
+                casa_editrice = $10, fondo = $11, posizione = $12, in_manutenzione = $13, tipo_prestito = $14, updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
-              AND COALESCE(tipo_catalogo, 'libri') = $12
+              AND COALESCE(tipo_catalogo, 'libri') = $15
           `, [
             inventarioId, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
-            itemData.posizione, itemData.note, itemData.immagine_url,
-            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito, tipoCatalogo
+            itemData.autore, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
+            itemData.casa_editrice, itemData.fondo, itemData.posizione,
+            itemData.in_manutenzione, itemData.tipo_prestito, tipoCatalogo
           ]);
         } else {
           // Inserisci nuovo elemento
           const newItem = await query(`
             INSERT INTO inventario (nome, quantita_totale, categoria_madre, categoria_id, 
-                                   posizione, note, immagine_url, in_manutenzione, soglia_minima, fornitore, tipo_prestito, tipo_catalogo)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                                   autore, relatore, anno_accademico, luogo_pubblicazione, data_pubblicazione, casa_editrice, fondo, posizione, in_manutenzione, tipo_prestito, tipo_catalogo)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING id
           `, [
             itemData.nome, itemData.quantita_totale, itemData.categoria_madre, categoria_id,
-            itemData.posizione, itemData.note, itemData.immagine_url,
-            itemData.in_manutenzione, itemData.soglia_minima, itemData.fornitore, itemData.tipo_prestito, tipoCatalogo
+            itemData.autore, itemData.relatore, itemData.anno_accademico, itemData.luogo_pubblicazione, itemData.data_pubblicazione,
+            itemData.casa_editrice, itemData.fondo, itemData.posizione, itemData.in_manutenzione, itemData.tipo_prestito, tipoCatalogo
           ]);
           inventarioId = newItem[0].id;
         }
@@ -302,18 +329,25 @@ r.post('/inventario/import', requireAuth, requireRole('admin'), async (req, res)
 // GET /api/excel/inventario/template - Genera template Excel
 r.get('/inventario/template', requireAuth, requireRole('admin'), async (req, res) => {
   try {
+        const tipoCatalogo = resolveCatalogType(req);
+        if (!tipoCatalogo) {
+          return res.status(400).json({ error: 'tipo_catalogo non valido. Valori ammessi: libri, tesi, cataloghi, riviste' });
+        }
         const templateData = [
           {
             'Nome': 'Esempio: Storia del Cinema Italiano',
             'Quantità Totale': '5',
-            'Corso': 'Cinema e Audiovisivi',
+            'Corso Accademico': 'Cinema e Audiovisivi',
             'Categoria': 'Libri',
+            'Autore': 'Mario Rossi',
+            'Relatore': tipoCatalogo === 'tesi' ? 'Prof. Verdi' : '',
+            'Anno Accademico': tipoCatalogo === 'tesi' ? '2024/2025' : '',
+            'Luogo': 'Firenze',
+            'Data Pubblicazione': '2022',
+            'Casa Editrice': 'Einaudi',
+            'Fondo': 'Ciulli',
             'Posizione': 'Scaffale A - Ripiano 1',
-            'Note': 'Esempio: Libro di testo per corsi di cinema',
-            'Immagine URL': 'https://example.com/libro.jpg',
             'In Manutenzione': 'No (Sì/No)',
-            'Soglia Minima': '2',
-            'Fornitore': 'Esempio: Canon Italia',
             'Tipo Prestito': 'solo_esterno (solo_esterno/solo_interno/entrambi)',
             'ID Unità 1': 'CANON-001',
             'ID Unità 2': 'CANON-002',
@@ -331,13 +365,15 @@ r.get('/inventario/template', requireAuth, requireRole('admin'), async (req, res
       { wch: 12 },  // Quantità Totale
       { wch: 20 },  // Corso Accademico
       { wch: 20 },  // Categoria
+      { wch: 20 },  // Autore
+      { wch: 20 },  // Relatore
+      { wch: 15 },  // Anno Accademico
+      { wch: 15 },  // Luogo
+      { wch: 15 },  // Data pubblicazione
+      { wch: 20 },  // Casa editrice
+      { wch: 15 },  // Fondo
       { wch: 15 },  // Posizione
-      { wch: 40 },  // Note
-      { wch: 30 },  // Immagine URL
       { wch: 12 },  // In Manutenzione
-      { wch: 12 },  // Soglia Minima
-      { wch: 30 },  // Corsi Assegnati
-      { wch: 20 },  // Fornitore
       { wch: 25 },  // Tipo Prestito
       { wch: 12 },  // ID Unità 1
       { wch: 12 },  // ID Unità 2
@@ -347,12 +383,13 @@ r.get('/inventario/template', requireAuth, requireRole('admin'), async (req, res
     ];
     ws['!cols'] = colWidths;
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Template Inventario');
+    const catalogLabel = getCatalogLabel(tipoCatalogo);
+    XLSX.utils.book_append_sheet(wb, ws, `Template ${catalogLabel}`);
     
     const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="template_inventario_laba.xlsx"');
+    res.setHeader('Content-Disposition', `attachment; filename="template_inventario_${catalogLabel}.xlsx"`);
     res.setHeader('Content-Length', excelBuffer.length);
     
     res.send(excelBuffer);

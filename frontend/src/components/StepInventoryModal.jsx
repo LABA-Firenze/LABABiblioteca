@@ -26,6 +26,7 @@ function normalizeAcademicYearValue(val) {
 const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, catalogType = 'libri' }) => {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Dati pubblicazione, 3: Tipo Utilizzo, 4: Categoria, 5: Codici Univoci
  const [courses, setCourses] = useState([]);
+ const [categories, setCategories] = useState([]);
  const [loading, setLoading] = useState(false);
  const [error, setError] = useState(null);
  const [unitsLoading, setUnitsLoading] = useState(false); // in modifica: attesa caricamento unità/codici
@@ -40,7 +41,10 @@ const StepInventoryModal = ({ isOpen, onClose, onSuccess, editingItem = null, ca
     relatore: '',
     anno_accademico: '',
     luogo_pubblicazione: '',
+    data_pubblicazione: '',
     casa_editrice: '',
+    fondo: '',
+    categoria_id: '',
     tipo_prestito: 'solo_esterno',
     location: '',
     corso_accademico: '',
@@ -93,6 +97,7 @@ const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
  useEffect(() => {
  if (isOpen) {
  fetchCourses();
+ fetchCategories();
  if (editingItem) {
  // Carica dati per la modifica; precompila i codici univoci da editingItem.unita_codici (dal catalogo)
         const unitaPrecompilate = (editingItem.unita_codici && editingItem.unita_codici.length > 0)
@@ -107,7 +112,10 @@ const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
           relatore: editingItem.relatore || '',
           anno_accademico: normalizeAcademicYearValue(editingItem.anno_accademico),
           luogo_pubblicazione: editingItem.luogo_pubblicazione || '',
+          data_pubblicazione: editingItem.data_pubblicazione || '',
           casa_editrice: editingItem.casa_editrice || '',
+          fondo: editingItem.fondo || '',
+          categoria_id: editingItem.categoria_id || '',
           tipo_prestito: editingItem.tipo_prestito || 'solo_esterno',
           location: editingItem.location || '',
           corso_accademico: firstAssignedCourseFromItem(editingItem),
@@ -126,7 +134,10 @@ const currentCatalog = catalogLabels[catalogType] || catalogLabels.libri;
         relatore: '',
         anno_accademico: '',
         luogo_pubblicazione: '',
+        data_pubblicazione: '',
         casa_editrice: '',
+        fondo: '',
+        categoria_id: '',
         tipo_prestito: 'solo_esterno',
         location: '',
         corso_accademico: '',
@@ -249,6 +260,20 @@ const handleQuantityChange = (quantity) => {
   }
 };
 
+const fetchCategories = async () => {
+ try {
+   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/categorie-semplici`, {
+     headers: { 'Authorization': `Bearer ${token}` }
+   });
+   if (response.ok) {
+     const data = await response.json();
+     setCategories(data);
+   }
+ } catch (err) {
+   console.error('Errore caricamento settori:', err);
+ }
+};
+
  // Handle unit code change
  const handleUnitCodeChange = (index, newCode) => {
  const updatedUnits = [...formData.unita];
@@ -265,7 +290,7 @@ const handleSubmit = async () => {
     return;
   }
   if (!String(formData.autore || '').trim()) {
-    setError("L'alunno è obbligatorio");
+    setError(catalogType === 'tesi' ? "L'alunno è obbligatorio" : "L'autore è obbligatorio");
     return;
   }
   if (catalogType === 'tesi') {
@@ -302,14 +327,14 @@ const handleSubmit = async () => {
     ...formData,
     posizione: formData.scaffale || null, // Mappa scaffale a posizione per il backend
     categoria_madre: categoriaMadreValue,
-    categoria_id: null,
+    categoria_id: catalogType === 'tesi' ? null : (formData.categoria_id || null),
     autore: formData.autore || null,
     relatore: catalogType === 'tesi' ? (formData.relatore || null) : null,
     anno_accademico: catalogType === 'tesi' ? (formData.anno_accademico || null) : null,
-    luogo_pubblicazione: catalogType === 'tesi' ? (formData.luogo_pubblicazione || null) : null,
-    data_pubblicazione: null,
+    luogo_pubblicazione: formData.luogo_pubblicazione || null,
+    data_pubblicazione: catalogType === 'tesi' ? null : (formData.data_pubblicazione ? parseInt(formData.data_pubblicazione, 10) : null),
     casa_editrice: catalogType === 'tesi' ? null : (formData.casa_editrice || null),
-    fondo: null,
+    fondo: catalogType === 'tesi' ? null : (formData.fondo || null),
     settore: null,
     location: formData.location || null,
     corsi_assegnati: isTesi ? [corsoSel] : [],
@@ -350,12 +375,12 @@ const handleSubmit = async () => {
  };
 
 const getStepTitle = () => {
-  const step2Title = catalogType === 'tesi' ? 'Dati tesi' : 'Casa editrice';
+  const step2Title = catalogType === 'tesi' ? 'Dati tesi' : 'Dati pubblicazione';
   switch (step) {
     case 1: return 'Informazioni Base';
     case 2: return step2Title;
     case 3: return 'Tipo di Utilizzo';
-    case 4: return catalogType === 'tesi' ? 'Corso accademico (tesi)' : 'Corsi accademici';
+    case 4: return catalogType === 'tesi' ? 'Corso accademico (tesi)' : 'Fondo e Settore';
     case 5: return 'Codici Univoci';
     default: return 'Nuovo Elemento';
   }
@@ -426,7 +451,7 @@ return (
    { num: 1, label: 'Info Base', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
    { num: 2, label: 'Descrizione', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
    { num: 3, label: 'Tipo Utilizzo', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg> },
-   { num: 4, label: catalogType === 'tesi' ? 'Corso tesi' : 'Tutti i corsi', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+  { num: 4, label: catalogType === 'tesi' ? 'Corso tesi' : 'Fondo/Settore', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
    { num: 5, label: 'Codici Unità', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg> }
  ].map((stepData, index) => (
  <React.Fragment key={stepData.num}>
@@ -524,11 +549,11 @@ placeholder={currentCatalog.titlePlaceholder}
  </div>
  )}
 
- {/* Step 2: tesi = relatore, anno, luogo; altri tipi = solo casa editrice */}
+ {/* Step 2: tesi = relatore, anno, luogo; altri tipi = dati pubblicazione */}
  {step === 2 && (
  <div className="space-y-4">
  <h3 className="text-lg font-semibold text-primary mb-4">
-  {catalogType === 'tesi' ? 'Dati tesi' : 'Dettaglio editoriale'}
+  {catalogType === 'tesi' ? 'Dati tesi' : 'Dati pubblicazione'}
  </h3>
  
  <div className="space-y-4">
@@ -569,16 +594,40 @@ placeholder={currentCatalog.titlePlaceholder}
       </div>
     </>
   ) : (
-    <div className="form-group">
-      <label className="form-label">Casa Editrice</label>
-      <input
-        type="text"
-        value={formData.casa_editrice}
-        onChange={(e) => setFormData(prev => ({ ...prev, casa_editrice: e.target.value }))}
-        className="input-field"
-        placeholder="Es. Mondadori, Einaudi, Feltrinelli"
-      />
-    </div>
+    <>
+      <div className="form-group">
+        <label className="form-label">Luogo</label>
+        <input
+          type="text"
+          value={formData.luogo_pubblicazione}
+          onChange={(e) => setFormData(prev => ({ ...prev, luogo_pubblicazione: e.target.value }))}
+          className="input-field"
+          placeholder="Es. Firenze"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Data pubblicazione (anno)</label>
+        <input
+          type="number"
+          min="1500"
+          max="2100"
+          value={formData.data_pubblicazione}
+          onChange={(e) => setFormData(prev => ({ ...prev, data_pubblicazione: e.target.value }))}
+          className="input-field"
+          placeholder="Es. 2007"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Casa Editrice</label>
+        <input
+          type="text"
+          value={formData.casa_editrice}
+          onChange={(e) => setFormData(prev => ({ ...prev, casa_editrice: e.target.value }))}
+          className="input-field"
+          placeholder="Es. Mondadori, Einaudi, Feltrinelli"
+        />
+      </div>
+    </>
   )}
  </div>
  </div>
@@ -670,11 +719,11 @@ Tipo di Utilizzo
 </div>
 )}
 
-{/* Step 4: tesi = un solo corso; altri tipi = tutti i corsi (solo informativo) */}
+{/* Step 4: tesi = un solo corso; altri tipi = fondo e settore */}
 {step === 4 && (
  <div className="space-y-6">
  <h3 className="text-lg font-semibold text-primary mb-4">
-   {catalogType === 'tesi' ? 'Corso accademico della tesi' : 'Disponibilità per corso'}
+  {catalogType === 'tesi' ? 'Corso accademico della tesi' : 'Fondo e Settore'}
  </h3>
 
         {catalogType === 'tesi' ? (
@@ -698,14 +747,40 @@ Tipo di Utilizzo
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-teal-200 bg-teal-50 p-5 text-sm text-teal-900">
-            <p className="font-medium text-teal-950 mb-2">Libri, cataloghi e riviste</p>
-            <p>
-              Questo materiale viene reso disponibile <strong>automaticamente a tutti i corsi</strong> accademici presenti in anagrafica.
-            </p>
-            <p className="mt-3 text-teal-800">
-              Le <strong>tesi di laurea</strong> seguono una regola diversa: sono visibili <strong>solo</strong> al corso che selezioni nel modale tesi.
-            </p>
+          <div className="space-y-6">
+            <div className="rounded-xl border border-teal-200 bg-teal-50 p-5 text-sm text-teal-900">
+              <p className="font-medium text-teal-950 mb-2">Disponibilità corsi</p>
+              <p>
+                Questo materiale viene reso disponibile <strong>automaticamente a tutti i corsi</strong> accademici presenti in anagrafica.
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Fondo</label>
+              <input
+                type="text"
+                value={formData.fondo}
+                onChange={(e) => setFormData(prev => ({ ...prev, fondo: e.target.value }))}
+                className="input-field"
+                placeholder="Ciulli, LABA, ecc"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Settore</label>
+              <select
+                value={formData.categoria_id}
+                onChange={(e) => setFormData(prev => ({ ...prev, categoria_id: e.target.value }))}
+                className="select-field"
+              >
+                <option value="">Seleziona settore</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -731,7 +806,7 @@ Tipo di Utilizzo
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Titolo:</strong> {formData.nome}</div>
                   <div><strong>Quantità:</strong> {formData.quantita_totale}</div>
-                  <div><strong>Alunno:</strong> {formData.autore || '—'}</div>
+                  <div><strong>{catalogType === 'tesi' ? 'Alunno' : 'Autore'}:</strong> {formData.autore || '—'}</div>
                   <div><strong>Scaffale:</strong> {formData.scaffale || '—'}</div>
                   <div className="col-span-2">
                     <strong>{catalogType === 'tesi' ? 'Corso accademico (tesi)' : 'Corsi'}:</strong>{' '}
@@ -744,7 +819,13 @@ Tipo di Utilizzo
                       <div className="col-span-2"><strong>Luogo:</strong> {formData.luogo_pubblicazione || '—'}</div>
                     </>
                   ) : (
-                    <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || '—'}</div>
+                    <>
+                      <div><strong>Luogo:</strong> {formData.luogo_pubblicazione || '—'}</div>
+                      <div><strong>Anno:</strong> {formData.data_pubblicazione || '—'}</div>
+                      <div className="col-span-2"><strong>Casa Editrice:</strong> {formData.casa_editrice || '—'}</div>
+                      <div><strong>Fondo:</strong> {formData.fondo || '—'}</div>
+                      <div><strong>Settore:</strong> {categories.find((c) => String(c.id) === String(formData.categoria_id))?.nome || '—'}</div>
+                    </>
                   )}
                 </div>
  </div>
