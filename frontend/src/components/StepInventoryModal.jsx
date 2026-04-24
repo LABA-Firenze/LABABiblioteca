@@ -570,6 +570,18 @@ placeholder={currentCatalog.titlePlaceholder}
                     />
                   </div>
                 )}
+                {catalogType === 'riviste' && (
+                  <div className="form-group">
+                    <label className="form-label">Numero *</label>
+                    <input
+                      type="text"
+                      value={formData.numero_rivista}
+                      onChange={(e) => setFormData(prev => ({ ...prev, numero_rivista: e.target.value }))}
+                      className="input-field"
+                      placeholder="Es. 12, N. 4, Vol. 3 N. 2"
+                    />
+                  </div>
+                )}
 
 
  </div>
@@ -623,16 +635,6 @@ placeholder={currentCatalog.titlePlaceholder}
   ) : catalogType === 'riviste' ? (
     <>
       <div className="form-group">
-        <label className="form-label">Numero *</label>
-        <input
-          type="text"
-          value={formData.numero_rivista}
-          onChange={(e) => setFormData(prev => ({ ...prev, numero_rivista: e.target.value }))}
-          className="input-field"
-          placeholder="Es. 12, N. 4, Vol. 3 N. 2"
-        />
-      </div>
-      <div className="form-group">
         <label className="form-label">Data *</label>
         <input
           type="text"
@@ -664,13 +666,17 @@ placeholder={currentCatalog.titlePlaceholder}
       </div>
       <div className="form-group">
         <label className="form-label">Periodicità *</label>
-        <input
-          type="text"
+        <select
           value={formData.periodicita}
           onChange={(e) => setFormData(prev => ({ ...prev, periodicita: e.target.value }))}
-          className="input-field"
-          placeholder="Mensile, Trimestrale, Annuale..."
-        />
+          className="select-field"
+        >
+          <option value="">Seleziona periodicità</option>
+          <option value="mensile">mensile</option>
+          <option value="bimestrale">bimestrale</option>
+          <option value="trimestrale">trimestrale</option>
+          <option value="anuale">anuale</option>
+        </select>
       </div>
     </>
   ) : (
