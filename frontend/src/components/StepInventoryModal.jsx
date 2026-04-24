@@ -672,10 +672,10 @@ placeholder={currentCatalog.titlePlaceholder}
           className="select-field"
         >
           <option value="">Seleziona periodicità</option>
-          <option value="mensile">mensile</option>
-          <option value="bimestrale">bimestrale</option>
-          <option value="trimestrale">trimestrale</option>
-          <option value="anuale">anuale</option>
+          <option value="mensile">Mensile</option>
+          <option value="bimestrale">Bimestrale</option>
+          <option value="trimestrale">Trimestrale</option>
+          <option value="anuale">Anuale</option>
         </select>
       </div>
     </>
