@@ -157,6 +157,16 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess, catalogType
       }
     }
 
+    // Sabato: consentito solo uso interno
+    const isSaturday = dataInizio.getDay() === 6;
+    const isInternalUsage = selectedObject.tipo_prestito === 'solo_interno' || 
+      (selectedObject.tipo_prestito === 'entrambi' && tipoUtilizzo === 'interno');
+    if (isSaturday && !isInternalUsage) {
+      setError('Il sabato sono consentite solo richieste per utilizzo interno del materiale');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/richieste`, {
         method: 'POST',
@@ -585,6 +595,12 @@ const NewRequestModal = ({ isOpen, onClose, selectedItem, onSuccess, catalogType
                     }`}
                   />
                 </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-800">
+                  Il sabato sono consentite solo richieste per utilizzo interno del materiale.
+                </p>
               </div>
 
               {/* Note */}

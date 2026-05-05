@@ -194,6 +194,15 @@ r.post('/', requireAuth, async (req, res) => {
         }
       }
     }
+
+    // Sabato: consentito solo materiale ad uso interno
+    const isSaturday = dataInizio.getDay() === 6;
+    const isInternalUsage = item.tipo_prestito === 'solo_interno' || (item.tipo_prestito === 'entrambi' && tipo_utilizzo === 'interno');
+    if (isSaturday && !isInternalUsage) {
+      return res.status(400).json({
+        error: 'Il sabato sono consentite solo richieste per utilizzo interno del materiale'
+      });
+    }
     
     const result = await query(`
       INSERT INTO richieste (utente_id, inventario_id, dal, al, motivo, note, unit_id, tipo_utilizzo)

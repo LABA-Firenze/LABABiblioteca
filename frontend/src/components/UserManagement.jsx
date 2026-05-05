@@ -6,6 +6,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''
 const UserManagement = () => {
  const [users, setUsers] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [creatingUser, setCreatingUser] = useState(false);
  const [error, setError] = useState(null);
  const [successMessage, setSuccessMessage] = useState(null);
  const [showAddModal, setShowAddModal] = useState(false);
@@ -196,8 +197,9 @@ const adminUsers = useMemo(() => normalizedUsers.filter(user => normalizeRole(us
  e.preventDefault();
  try {
  setError(null);
+ setCreatingUser(true);
  
-   const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+   const response = await fetch(`${API_BASE_URL}/api/users`, {
  method: 'POST',
  headers: {
  'Content-Type': 'application/json',
@@ -225,6 +227,8 @@ const adminUsers = useMemo(() => normalizedUsers.filter(user => normalizeRole(us
  });
  } catch (err) {
  setError(err.message);
+ } finally {
+ setCreatingUser(false);
  }
  };
 
@@ -1044,9 +1048,10 @@ return (
  </button>
  <button
  type="submit"
+ disabled={creatingUser}
  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all duration-200"
  >
- Crea Utente
+ {creatingUser ? 'Creazione...' : 'Crea Utente'}
  </button>
  </div>
  </form>
