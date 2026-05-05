@@ -50,12 +50,18 @@ export default function AuthProvider({ children }) {
  setAuthLoading(false);
  }
  } catch (e) {
- // Token invalid/expired → clear session
- console.warn("/api/auth/me failed", e?.response?.status, e?.message);
+ // Logout only when token is actually invalid/forbidden.
+ // Do not clear session for transient network/server errors (e.g. quick repeated refresh).
+ const status = e?.response?.status;
+ console.warn("/api/auth/me failed", status, e?.message);
+ if (status === 401 || status === 403) {
  localStorage.removeItem(KEY);
- if (!cancelled) { 
- setToken(null); 
+ if (!cancelled) {
+ setToken(null);
  setUser(null);
+ setAuthLoading(false);
+ }
+ } else if (!cancelled) {
  setAuthLoading(false);
  }
  }
