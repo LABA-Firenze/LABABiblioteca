@@ -1065,13 +1065,17 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
               {/* Card Body */}
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {/* Settore (ex Categoria) */}
+                  {/* Settore/Corso Accademico */}
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Settore</label>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      {catalogType === 'tesi' ? 'Corso Accademico' : 'Settore'}
+                    </label>
                     <p className="text-sm text-gray-900 mt-1">
-                      {item.categoria_figlia || 
-                       (item.categoria_nome ? item.categoria_nome.split(' - ')[1] : null) || 
-                       'Nessuna'}
+                      {catalogType === 'tesi'
+                        ? (item.categoria_madre || 'N/A')
+                        : (item.categoria_figlia ||
+                           (item.categoria_nome ? item.categoria_nome.split(' - ')[1] : null) ||
+                           'Nessuna')}
                     </p>
                   </div>
 
