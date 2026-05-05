@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LayoutDashboard, BookOpen, Newspaper, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, GraduationCap, Newspaper, ArrowLeftRight, AlertTriangle, Users, Monitor, Bell, Menu, X, LogOut } from "lucide-react";
 import AuthProvider, { useAuth } from "./auth/AuthContext";
 import { NotificationProvider } from "./components/NotificationSystem.jsx";
 import DesktopNotificationManager from "./components/DesktopNotificationManager.jsx";
@@ -37,7 +37,7 @@ function AppInner() {
   const adminSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className={iconClass} /> },
     { id: 'inventario', label: 'Libri', icon: <BookOpen className={iconClass} /> },
-    { id: 'tesi-laurea', label: 'Tesi', icon: <BookOpen className={iconClass} /> },
+    { id: 'tesi-laurea', label: 'Tesi', icon: <GraduationCap className={iconClass} /> },
     { id: 'riviste', label: 'Riviste', icon: <Newspaper className={iconClass} /> },
     { id: 'prestiti', label: 'Prestiti', icon: <ArrowLeftRight className={iconClass} /> },
     { id: 'riparazioni', label: 'Segnalazioni', icon: <AlertTriangle className={iconClass} /> },
@@ -286,7 +286,7 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="w-5 h-5" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="w-5 h-5" />} label="Tesi" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<GraduationCap className="w-5 h-5" />} label="Tesi" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="w-5 h-5" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="w-5 h-5" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="w-5 h-5" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />
@@ -327,7 +327,7 @@ function AppInner() {
               <>
                 <NavButton icon={<LayoutDashboard className="icon" />} label="Dashboard" tab="dashboard" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<BookOpen className="icon" />} label="Libri" tab="inventario" currentTab={tab} onClick={handleTabChange} />
-                <NavButton icon={<BookOpen className="icon" />} label="Tesi" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
+                <NavButton icon={<GraduationCap className="icon" />} label="Tesi" tab="tesi-laurea" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<Newspaper className="icon" />} label="Riviste" tab="riviste" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<ArrowLeftRight className="icon" />} label="Prestiti" tab="prestiti" currentTab={tab} onClick={handleTabChange} />
                 <NavButton icon={<AlertTriangle className="icon" />} label="Segnalazioni" tab="riparazioni" currentTab={tab} onClick={handleTabChange} />

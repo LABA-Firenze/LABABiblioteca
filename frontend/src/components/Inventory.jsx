@@ -261,7 +261,9 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
     }]
   }));
 
-  // Filter inventory based on search term and category
+  const isThesisCatalog = catalogType === 'tesi';
+
+  // Filter inventory based on search term and category/course
   const filteredInventory = groupedInventory.filter(item => {
     // Search term filter - cerca anche nei codice_univoco delle unità
     const matchesSearch = !searchTerm || (
@@ -279,9 +281,13 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
       ))
     );
 
-    // Category filter (only for admin) - usa il nome della categoria semplice
+    // Primary filter (only for admin):
+    // - Libri/Cataloghi/Riviste: categoria/settore
+    // - Tesi: corso accademico
     const matchesCategory = !selectedCategoryFilter || !isAdmin || (
-      selectedCategoryFilter === (item.categoria_figlia || item.categoria_nome?.split(' - ')[1])
+      isThesisCatalog
+        ? selectedCategoryFilter === (item.categoria_madre || '')
+        : selectedCategoryFilter === (item.categoria_figlia || item.categoria_nome?.split(' - ')[1])
     );
 
     // Location filter
@@ -719,10 +725,12 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
               </div>
             </div>
 
-            {/* Category Filter - Only for Admin */}
+            {/* Category/Course Filter - Only for Admin */}
             {isAdmin && (
               <div className="w-full lg:w-64">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Filtra per Categoria</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {isThesisCatalog ? 'Filtra per Corso accademico' : 'Filtra per Categoria'}
+                </label>
                 <div className="relative">
                   <button
                     onClick={() => {
@@ -732,7 +740,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 bg-white text-left flex items-center justify-between hover:bg-gray-50"
                   >
                     <span className={selectedCategoryFilter ? 'text-gray-900' : 'text-gray-500'}>
-                      {selectedCategoryFilter || 'Tutti i settori'}
+                      {selectedCategoryFilter || (isThesisCatalog ? 'Tutti i corsi' : 'Tutti i settori')}
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -749,28 +757,50 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                             !selectedCategoryFilter ? 'bg-teal-50 text-teal-700' : 'text-gray-900'
                           }`}
                         >
-                          <span>Tutti i settori</span>
+                          <span>{isThesisCatalog ? 'Tutti i corsi' : 'Tutti i settori'}</span>
                           {!selectedCategoryFilter && (
                             <Check className="w-4 h-4 text-teal-600" />
                           )}
                         </button>
-                        {categories.map(cat => (
-                          <button
-                            key={cat.id}
-                            onClick={() => {
-                              setSelectedCategoryFilter(cat.nome);
-                              setShowCategoryDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left hover:bg-teal-50 transition-colors duration-200 flex items-center justify-between ${
-                              selectedCategoryFilter === cat.nome ? 'bg-teal-50 text-teal-700' : 'text-gray-900'
-                            }`}
-                          >
-                            <span>{cat.nome}</span>
-                            {selectedCategoryFilter === cat.nome && (
-                              <Check className="w-4 h-4 text-teal-600" />
-                            )}
-                          </button>
-                        ))}
+                        {isThesisCatalog
+                          ? courses.map((course, idx) => {
+                              const courseName = course?.nome || course?.corso || String(course || '').trim();
+                              if (!courseName) return null;
+                              return (
+                                <button
+                                  key={`course-${idx}-${courseName}`}
+                                  onClick={() => {
+                                    setSelectedCategoryFilter(courseName);
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                  className={`w-full px-4 py-3 text-left hover:bg-teal-50 transition-colors duration-200 flex items-center justify-between ${
+                                    selectedCategoryFilter === courseName ? 'bg-teal-50 text-teal-700' : 'text-gray-900'
+                                  }`}
+                                >
+                                  <span>{courseName}</span>
+                                  {selectedCategoryFilter === courseName && (
+                                    <Check className="w-4 h-4 text-teal-600" />
+                                  )}
+                                </button>
+                              );
+                            })
+                          : categories.map(cat => (
+                              <button
+                                key={cat.id}
+                                onClick={() => {
+                                  setSelectedCategoryFilter(cat.nome);
+                                  setShowCategoryDropdown(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left hover:bg-teal-50 transition-colors duration-200 flex items-center justify-between ${
+                                  selectedCategoryFilter === cat.nome ? 'bg-teal-50 text-teal-700' : 'text-gray-900'
+                                }`}
+                              >
+                                <span>{cat.nome}</span>
+                                {selectedCategoryFilter === cat.nome && (
+                                  <Check className="w-4 h-4 text-teal-600" />
+                                )}
+                              </button>
+                            ))}
                       </div>
                     </div>
                   )}
@@ -889,7 +919,7 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
                 <Filter className="w-5 h-5 text-teal-600 mr-2" />
                 <span className="text-teal-800 font-medium">
                   {filteredInventory.length} {filteredInventory.length === 1 ? 'risultato trovato' : 'risultati trovati'}
-                  {selectedCategoryFilter && ` nella categoria "${selectedCategoryFilter}"`}
+                  {selectedCategoryFilter && ` ${isThesisCatalog ? 'nel corso' : 'nella categoria'} "${selectedCategoryFilter}"`}
                   {selectedLocationFilter && ` nella posizione "${selectedLocationFilter}"`}
                 </span>
               </div>
@@ -908,11 +938,11 @@ const inventoryWithUnits = (inventoryData || []).map((item) => ({
               <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun articolo trovato</h3>
               <p className="text-gray-600 mb-4">
                 {searchTerm && (selectedCategoryFilter || selectedLocationFilter)
-                  ? `Nessun articolo corrisponde alla ricerca "${searchTerm}"${selectedCategoryFilter ? ` nella categoria "${selectedCategoryFilter}"` : ''}${selectedLocationFilter ? ` nella posizione "${selectedLocationFilter}"` : ''}`
+                  ? `Nessun articolo corrisponde alla ricerca "${searchTerm}"${selectedCategoryFilter ? ` ${isThesisCatalog ? 'nel corso' : 'nella categoria'} "${selectedCategoryFilter}"` : ''}${selectedLocationFilter ? ` nella posizione "${selectedLocationFilter}"` : ''}`
                   : searchTerm 
                     ? `Nessun articolo corrisponde alla ricerca "${searchTerm}"`
                     : selectedCategoryFilter || selectedLocationFilter
-                      ? `Nessun articolo${selectedCategoryFilter ? ` nella categoria "${selectedCategoryFilter}"` : ''}${selectedLocationFilter ? ` nella posizione "${selectedLocationFilter}"` : ''}`
+                      ? `Nessun articolo${selectedCategoryFilter ? ` ${isThesisCatalog ? 'nel corso' : 'nella categoria'} "${selectedCategoryFilter}"` : ''}${selectedLocationFilter ? ` nella posizione "${selectedLocationFilter}"` : ''}`
                       : "Nessun articolo disponibile"
                 }
               </p>
